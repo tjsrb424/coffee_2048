@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+html,
+body {
+  height: 100%;
+  overscroll-behavior-y: none;
+}
+
+body {
+  @apply bg-cream-100 text-coffee-900 antialiased;
+  background-image: radial-gradient(
+      circle at 20% 10%,
+      rgba(196, 154, 108, 0.12),
+      transparent 45%
+    ),
+    radial-gradient(circle at 80% 0%, rgba(156, 191, 166, 0.1), transparent 40%);
+}
+
+::selection {
+  @apply bg-accent-soft/30 text-coffee-900;
+}

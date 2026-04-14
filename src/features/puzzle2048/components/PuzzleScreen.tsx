@@ -1,0 +1,279 @@
+"use client";
+
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { AnimatePresence, motion } from "framer-motion";
+import { AppShell } from "@/components/layout/AppShell";
+import { BottomNav } from "@/components/layout/BottomNav";
+import { Button } from "@/components/ui/Button";
+import { computePuzzleRewards } from "@/features/meta/rewards/computePuzzleRewards";
+import { useGameFeedback } from "@/hooks/useGameFeedback";
+import { useAppStore } from "@/stores/useAppStore";
+import { useLockDocumentScroll } from "../hooks/useLockDocumentScroll";
+import { usePreventTouchScroll } from "../hooks/usePreventTouchScroll";
+import { usePuzzleKeyboard } from "../hooks/usePuzzleKeyboard";
+import { useSwipe } from "../hooks/useSwipe";
+import {
+  readPuzzleOutcomeFromState,
+  usePuzzleSessionStore,
+} from "../store/usePuzzleSessionStore";
+import type { Direction } from "../types";
+import { PuzzleBoard } from "./PuzzleBoard";
+import { PuzzleHud } from "./PuzzleHud";
+import { RewardPreview } from "./RewardPreview";
+import { SessionGoalChip } from "./SessionGoalChip";
+import {
+  SessionResultModal,
+  type SessionResultPayload,
+} from "./SessionResultModal";
+
+export function PuzzleScreen() {
+  const router = useRouter();
+  const startFresh = usePuzzleSessionStore((s) => s.startFresh);
+  const tryMove = usePuzzleSessionStore((s) => s.tryMove);
+  const gameOver = usePuzzleSessionStore((s) => s.gameOver);
+  const inputLocked = usePuzzleSessionStore((s) => s.inputLocked);
+  const applyOutcome = useAppStore((s) => s.applyPuzzleRunOutcome);
+  const bestScoreMeta = useAppStore((s) => s.puzzleProgress.bestScore);
+  const { lightTap, mergePulse, moveWhoosh } = useGameFeedback();
+
+  const [paused, setPaused] = useState(false);
+  const [resultOpen, setResultOpen] = useState(false);
+  const [resultPayload, setResultPayload] = useState<SessionResultPayload | null>(
+    null,
+  );
+  const [resultShowRetry, setResultShowRetry] = useState(false);
+
+  const appliedRef = useRef(false);
+  const gestureRef = usePreventTouchScroll();
+  const gameOverResultShownRef = useRef(false);
+
+  useLockDocumentScroll(true);
+
+  useEffect(() => {
+    appliedRef.current = false;
+    gameOverResultShownRef.current = false;
+    setResultOpen(false);
+    setResultPayload(null);
+    setResultShowRetry(false);
+    startFresh();
+  }, [startFresh]);
+
+  const buildResultPayload = useCallback((): SessionResultPayload => {
+    const { score, highestTile } = readPuzzleOutcomeFromState(
+      usePuzzleSessionStore.getState(),
+    );
+    return {
+      score,
+      highestTile,
+      rewards: computePuzzleRewards(score, highestTile),
+    };
+  }, []);
+
+  const openLeaveResult = useCallback(() => {
+    setResultPayload(buildResultPayload());
+    setResultShowRetry(false);
+    setPaused(false);
+    setResultOpen(true);
+  }, [buildResultPayload]);
+
+  useEffect(() => {
+    if (gameOver && !gameOverResultShownRef.current) {
+      gameOverResultShownRef.current = true;
+      setResultPayload(buildResultPayload());
+      setResultShowRetry(true);
+      setPaused(false);
+      setResultOpen(true);
+    }
+    if (!gameOver) {
+      gameOverResultShownRef.current = false;
+    }
+  }, [buildResultPayload, gameOver]);
+
+  const confirmLobbyFromResult = useCallback(() => {
+    if (appliedRef.current || !resultPayload) return;
+    appliedRef.current = true;
+    applyOutcome({
+      score: resultPayload.score,
+      highestTile: resultPayload.highestTile,
+    });
+    router.push("/lobby");
+  }, [applyOutcome, resultPayload, router]);
+
+  const retryFromResult = useCallback(() => {
+    startFresh();
+    setResultOpen(false);
+    setResultPayload(null);
+    setResultShowRetry(false);
+    appliedRef.current = false;
+    gameOverResultShownRef.current = false;
+  }, [startFresh]);
+
+  const dismissResultOnly = useCallback(() => {
+    setResultOpen(false);
+    setResultPayload(null);
+  }, []);
+
+  const onDirection = useCallback(
+    (dir: Direction) => {
+      if (paused || gameOver || resultOpen) return;
+      const before = usePuzzleSessionStore.getState();
+      tryMove(dir);
+      const after = usePuzzleSessionStore.getState();
+      if (after.board === before.board) return;
+      moveWhoosh();
+      if (after.lastMergeCount > 0) mergePulse();
+    },
+    [gameOver, mergePulse, moveWhoosh, paused, resultOpen, tryMove],
+  );
+
+  const swipe = useSwipe({ onSwipe: onDirection });
+  usePuzzleKeyboard({
+    enabled: !paused && !gameOver && !resultOpen,
+    onDirection,
+  });
+
+  const mergeCount = usePuzzleSessionStore((s) => s.lastMergeCount);
+
+  return (
+    <div className="flex h-[100svh] max-h-[100svh] flex-col overflow-hidden sm:h-[100dvh] sm:max-h-[100dvh]">
+      <AppShell className="flex min-h-0 flex-1 flex-col overflow-hidden pb-[calc(5.75rem+env(safe-area-inset-bottom))] pt-4 sm:pb-36 sm:pt-6">
+        <header className="mb-2 flex shrink-0 touch-auto items-center justify-between gap-2 sm:mb-3 sm:gap-3">
+          <div>
+            <p className="text-[10px] font-semibold uppercase tracking-wide text-coffee-600/60 sm:text-xs">
+              Puzzle
+            </p>
+            <h1 className="text-xl font-bold tracking-tight text-coffee-900 sm:text-2xl">
+              2048
+            </h1>
+          </div>
+          <div className="flex shrink-0 gap-1.5 sm:gap-2">
+            <Button
+              type="button"
+              variant="soft"
+              className="min-h-10 touch-auto px-3 text-xs sm:min-h-[44px] sm:px-4 sm:text-sm"
+              onClick={() => {
+                lightTap();
+                setPaused(true);
+              }}
+            >
+              일시정지
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              className="min-h-10 touch-auto px-3 text-xs sm:min-h-[44px] sm:px-4 sm:text-sm"
+              onClick={() => {
+                lightTap();
+                openLeaveResult();
+              }}
+            >
+              나가기
+            </Button>
+          </div>
+        </header>
+
+        <div className="flex min-h-0 flex-1 flex-col overscroll-contain">
+          <div className="relative isolate flex min-h-0 min-w-0 flex-1 flex-col gap-1.5 overflow-hidden sm:gap-4">
+            <SessionGoalChip />
+            <PuzzleHud bestScoreMeta={bestScoreMeta} />
+            <div className="relative z-[1] shrink-0">
+              <RewardPreview />
+            </div>
+            <div
+              ref={gestureRef}
+              className="relative z-0 flex min-h-0 min-w-0 flex-1 touch-none flex-col"
+              onTouchStart={swipe.onTouchStart}
+              onTouchEnd={swipe.onTouchEnd}
+            >
+              <div className="relative mx-auto flex h-full min-h-0 w-full max-w-[21rem] min-w-0">
+                <AnimatePresence>
+                  {mergeCount > 1 && !paused && !resultOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      className="pointer-events-none absolute bottom-full left-1/2 z-10 mb-1.5 max-w-[92%] -translate-x-1/2 rounded-full bg-accent-mint/30 px-2.5 py-1 text-center text-[10px] font-semibold leading-tight text-coffee-900 shadow-sm ring-1 ring-accent-mint/40 sm:mb-2 sm:px-3 sm:py-1.5 sm:text-[11px]"
+                    >
+                      한 번에 여러 합치기!
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+                <PuzzleBoard />
+              </div>
+            </div>
+          </div>
+        </div>
+      </AppShell>
+      <BottomNav />
+
+      {inputLocked && (
+        <div
+          className="pointer-events-none fixed inset-x-0 z-[45] flex justify-center px-3 sm:left-1/2 sm:max-w-md sm:-translate-x-1/2"
+          style={{
+            bottom: "calc(env(safe-area-inset-bottom, 0px) + 5.25rem)",
+          }}
+          aria-live="polite"
+        >
+          <p className="w-full max-w-[20rem] rounded-full bg-cream-50/95 px-3 py-2 text-center text-[11px] leading-snug text-coffee-700 shadow-md ring-1 ring-coffee-600/15 backdrop-blur-sm">
+            잠깐만요, 타일이 갓 구워진 느낌으로 정렬 중이에요.
+          </p>
+        </div>
+      )}
+
+      <AnimatePresence>
+        {paused && !resultOpen && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-coffee-900/35 px-6 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              initial={{ scale: 0.94, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.96, opacity: 0 }}
+              transition={{ type: "spring", stiffness: 420, damping: 28 }}
+              className="w-full max-w-sm rounded-3xl bg-cream-50 p-6 shadow-lift ring-1 ring-coffee-600/15"
+            >
+              <h2 className="text-xl font-bold text-coffee-900">잠시 멈춤</h2>
+              <p className="mt-2 text-sm leading-relaxed text-coffee-700">
+                숨 고르고, 다시 스와이프해도 좋아요.
+              </p>
+              <div className="mt-5 flex flex-col gap-2">
+                <Button
+                  type="button"
+                  onClick={() => {
+                    lightTap();
+                    setPaused(false);
+                  }}
+                >
+                  계속하기
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => {
+                    lightTap();
+                    openLeaveResult();
+                  }}
+                >
+                  로비로 (결과 보기)
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <SessionResultModal
+        open={resultOpen}
+        payload={resultPayload}
+        showRetry={resultShowRetry}
+        onConfirmLobby={confirmLobbyFromResult}
+        onRetry={resultShowRetry ? retryFromResult : undefined}
+        onDismiss={!resultShowRetry ? dismissResultOnly : undefined}
+      />
+    </div>
+  );
+}

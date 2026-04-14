@@ -1,0 +1,32 @@
+# Starter Tree
+
+```text
+coffee_2048_cursor_pack/
+  README.md
+  docs/
+    01_game_vision.md
+    02_core_loop_and_meta.md
+    03_2048_system.md
+    04_cafe_tycoon_system.md
+    05_ux_motion_direction.md
+    06_content_economy_bm.md
+    07_tech_architecture.md
+    08_dev_roadmap.md
+    09_cursor_workflow.md
+    10_cursor_task_templates.md
+  prompts/
+    cursor_master_prompt.md
+    sprint_01_2048_mvp.md
+    ui_motion_rules.md
+    coding_rules.md
+    task_template.md
+  app/
+    layout.tsx
+    page.tsx
+  stores/
+    useGameStore.ts
+  lib/
+    constants.ts
+  data/
+    tileDefinitions.ts
+```
