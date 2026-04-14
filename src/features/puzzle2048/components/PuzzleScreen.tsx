@@ -34,6 +34,8 @@ export function PuzzleScreen() {
   const gameOver = usePuzzleSessionStore((s) => s.gameOver);
   const inputLocked = usePuzzleSessionStore((s) => s.inputLocked);
   const applyOutcome = useAppStore((s) => s.applyPuzzleRunOutcome);
+  const consumeHeart = useAppStore((s) => s.consumePuzzleHeart);
+  const hearts = useAppStore((s) => s.playerResources.hearts);
   const bestScoreMeta = useAppStore((s) => s.puzzleProgress.bestScore);
   const { lightTap, mergePulse, moveWhoosh } = useGameFeedback();
 
@@ -43,6 +45,7 @@ export function PuzzleScreen() {
     null,
   );
   const [resultShowRetry, setResultShowRetry] = useState(false);
+  const [noHeartOpen, setNoHeartOpen] = useState(false);
 
   const appliedRef = useRef(false);
   const gestureRef = usePreventTouchScroll();
@@ -51,13 +54,17 @@ export function PuzzleScreen() {
   useLockDocumentScroll(true);
 
   useEffect(() => {
+    if (hearts <= 0) {
+      setNoHeartOpen(true);
+      return;
+    }
     appliedRef.current = false;
     gameOverResultShownRef.current = false;
     setResultOpen(false);
     setResultPayload(null);
     setResultShowRetry(false);
     startFresh();
-  }, [startFresh]);
+  }, [hearts, startFresh]);
 
   const buildResultPayload = useCallback((): SessionResultPayload => {
     const { score, highestTile } = readPuzzleOutcomeFromState(
@@ -101,13 +108,17 @@ export function PuzzleScreen() {
   }, [applyOutcome, resultPayload, router]);
 
   const retryFromResult = useCallback(() => {
+    if (!consumeHeart()) {
+      setNoHeartOpen(true);
+      return;
+    }
     startFresh();
     setResultOpen(false);
     setResultPayload(null);
     setResultShowRetry(false);
     appliedRef.current = false;
     gameOverResultShownRef.current = false;
-  }, [startFresh]);
+  }, [consumeHeart, startFresh]);
 
   const dismissResultOnly = useCallback(() => {
     setResultOpen(false);
@@ -183,8 +194,12 @@ export function PuzzleScreen() {
             <div
               ref={gestureRef}
               className="relative z-0 flex min-h-0 min-w-0 flex-1 touch-none flex-col"
+              onPointerDown={swipe.onPointerDown}
+              onPointerUp={swipe.onPointerUp}
+              onPointerCancel={swipe.onPointerCancel}
               onTouchStart={swipe.onTouchStart}
               onTouchEnd={swipe.onTouchEnd}
+              onTouchCancel={swipe.onTouchCancel}
             >
               <div className="relative mx-auto flex h-full min-h-0 w-full max-w-[21rem] min-w-0">
                 <AnimatePresence>
@@ -274,6 +289,63 @@ export function PuzzleScreen() {
         onRetry={resultShowRetry ? retryFromResult : undefined}
         onDismiss={!resultShowRetry ? dismissResultOnly : undefined}
       />
+
+      <AnimatePresence>
+        {noHeartOpen && (
+          <motion.div
+            className="fixed inset-0 z-[70] flex items-center justify-center bg-coffee-900/45 px-6 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+          >
+            <motion.div
+              initial={{ scale: 0.94, opacity: 0, y: 8 }}
+              animate={{ scale: 1, opacity: 1, y: 0 }}
+              exit={{ scale: 0.96, opacity: 0, y: 6 }}
+              transition={{ type: "spring", stiffness: 420, damping: 30 }}
+              className="w-full max-w-sm rounded-3xl bg-cream-50 p-6 shadow-lift ring-1 ring-coffee-600/15"
+              role="dialog"
+              aria-modal="true"
+              aria-labelledby="no-heart-title"
+            >
+              <p className="text-xs font-semibold uppercase tracking-wide text-coffee-600/60">
+                Puzzle
+              </p>
+              <h2
+                id="no-heart-title"
+                className="mt-1 text-2xl font-bold tracking-tight text-coffee-900"
+              >
+                하트가 부족해요
+              </h2>
+              <p className="mt-2 text-sm leading-relaxed text-coffee-700">
+                지금은 퍼즐을 시작할 수 없어요. 로비로 돌아가서 준비해볼까요?
+              </p>
+              <div className="mt-5 flex flex-col gap-2">
+                <Button
+                  type="button"
+                  onClick={() => {
+                    lightTap();
+                    setNoHeartOpen(false);
+                    router.push("/lobby");
+                  }}
+                >
+                  로비로
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  onClick={() => {
+                    lightTap();
+                    setNoHeartOpen(false);
+                  }}
+                >
+                  닫기
+                </Button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

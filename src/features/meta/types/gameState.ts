@@ -42,9 +42,15 @@ export type SettingsState = {
   reducedMotion: boolean;
 };
 
+export type MetaRuntimeState = {
+  /** 하트 회복 기준 시각(ms). 0이면 첫 진입 시 현재 시각으로 초기화 */
+  lastHeartRegenAtMs: number;
+};
+
 export type AppPersistState = {
   playerResources: PlayerResources;
   puzzleProgress: PuzzleProgress;
   cafeState: CafeState;
+  meta: MetaRuntimeState;
   settings: SettingsState;
 };

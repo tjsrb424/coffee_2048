@@ -12,6 +12,8 @@ export function LobbyMainCard() {
   const router = useRouter();
   const cafe = useAppStore((s) => s.cafeState);
   const beans = useAppStore((s) => s.playerResources.beans);
+  const hearts = useAppStore((s) => s.playerResources.hearts);
+  const consumeHeart = useAppStore((s) => s.consumePuzzleHeart);
   const { lightTap } = useGameFeedback();
 
   return (
@@ -36,13 +38,20 @@ export function LobbyMainCard() {
           <Button
             type="button"
             className="w-full"
+            disabled={hearts <= 0}
             onClick={() => {
               lightTap();
+              if (!consumeHeart()) return;
               router.push("/puzzle");
             }}
           >
             퍼즐 시작
           </Button>
+          {hearts <= 0 && (
+            <p className="mt-2 text-center text-xs text-coffee-600/70">
+              하트가 부족해요. 퍼즐 보상으로 하트를 얻을 수 있어요.
+            </p>
+          )}
         </div>
       </div>
     </Card>

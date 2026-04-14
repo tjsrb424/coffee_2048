@@ -1,0 +1,228 @@
+"use client";
+
+import { useCallback, useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import { Button } from "@/components/ui/Button";
+import { Card } from "@/components/ui/Card";
+import { useGameFeedback } from "@/hooks/useGameFeedback";
+import { cn } from "@/lib/utils";
+import { useAppStore } from "@/stores/useAppStore";
+
+function safeJsonStringify(value: unknown): string {
+  return JSON.stringify(value, null, 2);
+}
+
+export function DevDebugPanel({ className }: { className?: string }) {
+  const { lightTap } = useGameFeedback();
+
+  const coins = useAppStore((s) => s.playerResources.coins);
+  const beans = useAppStore((s) => s.playerResources.beans);
+  const hearts = useAppStore((s) => s.playerResources.hearts);
+  const cafe = useAppStore((s) => s.cafeState);
+
+  const patchRes = useAppStore((s) => s.patchPlayerResources);
+  const patchCafe = useAppStore((s) => s.patchCafeState);
+  const exportSave = useAppStore((s) => s.exportSave);
+  const importSave = useAppStore((s) => s.importSave);
+  const resetSave = useAppStore((s) => s.resetSave);
+
+  const [open, setOpen] = useState(false);
+  const [jsonText, setJsonText] = useState("");
+  const [status, setStatus] = useState<string | null>(null);
+
+  const title = useMemo(() => "DEV", []);
+
+  const bump = useCallback(
+    (delta: Partial<{ coins: number; beans: number; hearts: number }>) => {
+      lightTap();
+      patchRes({
+        coins: delta.coins != null ? Math.max(0, coins + delta.coins) : coins,
+        beans: delta.beans != null ? Math.max(0, beans + delta.beans) : beans,
+        hearts:
+          delta.hearts != null ? Math.max(0, hearts + delta.hearts) : hearts,
+      });
+    },
+    [beans, coins, hearts, lightTap, patchRes],
+  );
+
+  const copySave = useCallback(async () => {
+    lightTap();
+    try {
+      const txt = safeJsonStringify(exportSave());
+      setJsonText(txt);
+      await navigator.clipboard.writeText(txt);
+      setStatus("세이브 JSON을 클립보드에 복사했어요.");
+    } catch {
+      setStatus("복사 실패: 브라우저 권한을 확인해주세요.");
+    }
+  }, [exportSave, lightTap]);
+
+  const pasteAndImport = useCallback(async () => {
+    lightTap();
+    try {
+      const txt =
+        jsonText.trim().length > 0
+          ? jsonText
+          : await navigator.clipboard.readText();
+      const parsed = JSON.parse(txt);
+      const ok = importSave(parsed);
+      setStatus(ok ? "세이브를 불러왔어요." : "세이브 형식이 올바르지 않아요.");
+    } catch {
+      setStatus("불러오기 실패: JSON 형식을 확인해주세요.");
+    }
+  }, [importSave, jsonText, lightTap]);
+
+  const doReset = useCallback(() => {
+    lightTap();
+    resetSave();
+    setStatus("세이브를 초기화했어요. (설정은 유지)");
+  }, [lightTap, resetSave]);
+
+  const giveShots = useCallback(
+    (delta: number) => {
+      lightTap();
+      patchCafe({ espressoShots: Math.max(0, cafe.espressoShots + delta) });
+    },
+    [cafe.espressoShots, lightTap, patchCafe],
+  );
+
+  const clearStatus = useCallback(() => setStatus(null), []);
+
+  return (
+    <div className={cn("fixed bottom-3 left-3 z-[80]", className)}>
+      <div className="pointer-events-auto flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => {
+            lightTap();
+            setOpen((v) => !v);
+            clearStatus();
+          }}
+          className="rounded-full bg-coffee-900/85 px-3 py-2 text-xs font-bold tracking-wide text-cream-50 shadow-md ring-1 ring-black/10 backdrop-blur"
+        >
+          {title}
+        </button>
+      </div>
+
+      {open && (
+        <motion.div
+          initial={{ opacity: 0, y: 10, scale: 0.98 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ type: "spring", stiffness: 420, damping: 32 }}
+          className="pointer-events-auto mt-2 w-[min(92vw,420px)]"
+        >
+          <Card className="space-y-3 p-4">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <div className="text-xs font-semibold uppercase tracking-wide text-coffee-600/60">
+                  개발자 디버그
+                </div>
+                <div className="mt-1 text-sm font-bold text-coffee-900">
+                  coins {coins} · beans {beans} · hearts {hearts}
+                </div>
+              </div>
+              <Button
+                type="button"
+                variant="ghost"
+                className="min-h-[40px] px-3 text-sm"
+                onClick={() => {
+                  lightTap();
+                  setOpen(false);
+                }}
+              >
+                닫기
+              </Button>
+            </div>
+
+            {status && (
+              <div className="rounded-2xl bg-cream-200/70 px-3 py-2 text-xs text-coffee-800 ring-1 ring-coffee-600/10">
+                {status}
+              </div>
+            )}
+
+            <div className="grid grid-cols-3 gap-2">
+              <Button type="button" variant="soft" onClick={() => bump({ coins: 50 })}>
+                +50 코인
+              </Button>
+              <Button type="button" variant="soft" onClick={() => bump({ beans: 10 })}>
+                +10 원두
+              </Button>
+              <Button type="button" variant="soft" onClick={() => bump({ hearts: 1 })}>
+                +1 하트
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => bump({ coins: -50 })}
+              >
+                -50 코인
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => bump({ beans: -5 })}
+              >
+                -5 원두
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => bump({ hearts: -1 })}
+              >
+                -1 하트
+              </Button>
+            </div>
+
+            <div className="rounded-2xl bg-coffee-900/5 px-3 py-3 ring-1 ring-coffee-600/10">
+              <div className="text-xs font-semibold text-coffee-700">
+                카페 (빠른 조작)
+              </div>
+              <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-coffee-700">
+                <span className="font-semibold">샷</span>
+                <span className="tabular-nums">{cafe.espressoShots}</span>
+                <Button
+                  type="button"
+                  variant="soft"
+                  className="min-h-[36px] px-3 text-xs"
+                  onClick={() => giveShots(6)}
+                >
+                  +6
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="min-h-[36px] px-3 text-xs"
+                  onClick={() => giveShots(-6)}
+                >
+                  -6
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <div className="flex flex-wrap gap-2">
+                <Button type="button" variant="soft" onClick={copySave}>
+                  세이브 복사
+                </Button>
+                <Button type="button" variant="soft" onClick={pasteAndImport}>
+                  세이브 불러오기
+                </Button>
+                <Button type="button" variant="ghost" onClick={doReset}>
+                  세이브 초기화
+                </Button>
+              </div>
+              <textarea
+                value={jsonText}
+                onChange={(e) => setJsonText(e.target.value)}
+                placeholder="여기에 세이브 JSON을 붙여넣고 '세이브 불러오기'를 누르세요."
+                className="min-h-[120px] w-full resize-y rounded-2xl bg-cream-50/90 p-3 text-[11px] leading-relaxed text-coffee-900 ring-1 ring-coffee-600/10 outline-none focus:ring-2 focus:ring-coffee-600/25"
+              />
+            </div>
+          </Card>
+        </motion.div>
+      )}
+    </div>
+  );
+}
+

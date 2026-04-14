@@ -10,7 +10,9 @@ export function useCafeAutoSell(options: {
 }) {
   const stepAutoSell = useAppStore((s) => s.stepAutoSell);
   const recordOfflineSaleSummary = useAppStore((s) => s.recordOfflineSaleSummary);
-  const cafe = useAppStore((s) => s.cafeState);
+  const autoSellIntervalMs = useAppStore(
+    (s) => getCafeRuntimeModifiers(s.cafeState).autoSellIntervalMs,
+  );
   const onCoinsEarned = options.onCoinsEarned;
   const onOfflineSettled = options.onOfflineSettled;
   const cbRef = useRef(onCoinsEarned);
@@ -26,12 +28,12 @@ export function useCafeAutoSell(options: {
       const { gainedCoins, soldCount, ticks } = stepAutoSell(now);
       if (gainedCoins <= 0) return;
 
-      const interval = getCafeRuntimeModifiers(cafe).autoSellIntervalMs;
       const gapMs = lastBefore > 0 ? now - lastBefore : 0;
       const shouldTreatAsOffline =
         firstRef.current &&
         lastBefore > 0 &&
-        (ticks >= 2 || gapMs >= Math.max(8000, Math.floor(interval * 2.25)));
+        (ticks >= 2 ||
+          gapMs >= Math.max(8000, Math.floor(autoSellIntervalMs * 2.25)));
 
       if (shouldTreatAsOffline) {
         recordOfflineSaleSummary({ atMs: now, gainedCoins, soldCount });
@@ -44,5 +46,5 @@ export function useCafeAutoSell(options: {
     firstRef.current = false;
     const id = window.setInterval(tick, 1000);
     return () => window.clearInterval(id);
-  }, [cafe, recordOfflineSaleSummary, stepAutoSell]);
+  }, [autoSellIntervalMs, recordOfflineSaleSummary, stepAutoSell]);
 }

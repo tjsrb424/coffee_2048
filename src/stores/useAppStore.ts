@@ -21,6 +21,7 @@ import type {
   AppPersistState,
   CafeState,
   DrinkMenuId,
+  MetaRuntimeState,
   PlayerResources,
   PuzzleProgress,
   SettingsState,
@@ -62,10 +63,15 @@ const defaultSettings: SettingsState = {
   reducedMotion: false,
 };
 
+const defaultMeta: MetaRuntimeState = {
+  lastHeartRegenAtMs: 0,
+};
+
 const defaultState: AppPersistState = {
   playerResources: defaultResources,
   puzzleProgress: defaultPuzzleProgress,
   cafeState: defaultCafe,
+  meta: defaultMeta,
   settings: defaultSettings,
 };
 
@@ -90,6 +96,22 @@ export type AppStore = AppPersistState & {
     soldCount: number;
   }) => void;
   purchaseCafeUpgrade: (track: CafeUpgradeTrack) => boolean;
+  /** 개발자 디버그: 자원 수치 강제 조정 */
+  patchPlayerResources: (patch: Partial<PlayerResources>) => void;
+  /** 개발자 디버그: 카페 상태 일부 강제 조정 */
+  patchCafeState: (patch: Partial<CafeState>) => void;
+  /** 개발자 디버그: 퍼즐 진행 강제 조정 */
+  patchPuzzleProgress: (patch: Partial<PuzzleProgress>) => void;
+  /** 개발자 디버그: 저장 데이터 전체 덤프 */
+  exportSave: () => AppPersistState;
+  /** 개발자 디버그: 저장 데이터 전체 로드(최소 검증/보정 포함) */
+  importSave: (data: unknown) => boolean;
+  /** 개발자 디버그: 세이브 초기화(설정은 유지) */
+  resetSave: () => void;
+  /** 퍼즐 입장/재도전 비용(하트) 차감 */
+  consumePuzzleHeart: () => boolean;
+  /** 하트 자동 회복 틱 — 회복량 반환 */
+  stepHeartRegen: (nowMs: number) => { gainedHearts: number; ticks: number };
 };
 
 function mergePersisted(persisted: unknown, current: AppStore): AppStore {
@@ -112,6 +134,11 @@ function mergePersisted(persisted: unknown, current: AppStore): AppStore {
       merged.cafeLevel = recomputeCafeLevel(merged);
       return merged;
     })(),
+    meta: {
+      ...defaultMeta,
+      ...current.meta,
+      ...p.meta,
+    },
     settings: {
       ...defaultSettings,
       ...current.settings,
@@ -269,6 +296,105 @@ export const useAppStore = create<AppStore>()(
           cafeState: nextCafe,
         });
         return true;
+      },
+      patchPlayerResources: (patch) =>
+        set((s) => ({
+          playerResources: {
+            ...s.playerResources,
+            ...patch,
+          },
+        })),
+      patchCafeState: (patch) =>
+        set((s) => {
+          const next: CafeState = {
+            ...s.cafeState,
+            ...patch,
+          };
+          next.cafeLevel = recomputeCafeLevel(next);
+          return { cafeState: next };
+        }),
+      patchPuzzleProgress: (patch) =>
+        set((s) => ({
+          puzzleProgress: {
+            ...s.puzzleProgress,
+            ...patch,
+          },
+        })),
+      exportSave: () => {
+        const s = get();
+        return {
+          playerResources: s.playerResources,
+          puzzleProgress: s.puzzleProgress,
+          cafeState: s.cafeState,
+          meta: s.meta,
+          settings: s.settings,
+        };
+      },
+      importSave: (data) => {
+        if (!data || typeof data !== "object") return false;
+        const input = data as Partial<AppPersistState>;
+        const prev = get();
+        const merged = mergePersisted(input, prev);
+        set({
+          playerResources: merged.playerResources,
+          puzzleProgress: merged.puzzleProgress,
+          cafeState: merged.cafeState,
+          settings: merged.settings,
+        });
+        return true;
+      },
+      resetSave: () => {
+        const prev = get();
+        set({
+          ...defaultState,
+          settings: prev.settings,
+        });
+      },
+      consumePuzzleHeart: () => {
+        const prev = get();
+        if (prev.playerResources.hearts <= 0) return false;
+        set({
+          playerResources: {
+            ...prev.playerResources,
+            hearts: prev.playerResources.hearts - 1,
+          },
+        });
+        return true;
+      },
+      stepHeartRegen: (nowMs) => {
+        const MAX_HEARTS = 5;
+        const INTERVAL_MS = 10 * 60 * 1000; // 10분
+        const prev = get();
+        const hearts = prev.playerResources.hearts;
+        const last = prev.meta.lastHeartRegenAtMs;
+
+        if (hearts >= MAX_HEARTS) {
+          // 만땅일 때는 누적되지 않게 기준 시각만 현재로 리셋
+          if (last !== nowMs) set({ meta: { ...prev.meta, lastHeartRegenAtMs: nowMs } });
+          return { gainedHearts: 0, ticks: 0 };
+        }
+
+        if (last === 0) {
+          set({ meta: { ...prev.meta, lastHeartRegenAtMs: nowMs } });
+          return { gainedHearts: 0, ticks: 0 };
+        }
+
+        const grossTicks = Math.floor((nowMs - last) / INTERVAL_MS);
+        if (grossTicks <= 0) return { gainedHearts: 0, ticks: 0 };
+
+        const canGain = Math.min(MAX_HEARTS - hearts, grossTicks);
+        const nextLast = last + grossTicks * INTERVAL_MS;
+        set({
+          playerResources: {
+            ...prev.playerResources,
+            hearts: hearts + canGain,
+          },
+          meta: {
+            ...prev.meta,
+            lastHeartRegenAtMs: nextLast,
+          },
+        });
+        return { gainedHearts: canGain, ticks: grossTicks };
       },
     }),
     {
