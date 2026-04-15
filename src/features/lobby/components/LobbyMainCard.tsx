@@ -46,9 +46,7 @@ export function LobbyMainCard() {
               window.dispatchEvent(
                 new CustomEvent("coffee:request-bgm-fadeout", { detail: { ms: 1200 } }),
               );
-              window.setTimeout(() => {
-                router.push("/puzzle");
-              }, 900);
+              router.push("/puzzle");
             }}
           >
             퍼즐 시작

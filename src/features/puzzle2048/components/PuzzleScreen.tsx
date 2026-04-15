@@ -4,7 +4,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { AppShell } from "@/components/layout/AppShell";
-import { BottomNav } from "@/components/layout/BottomNav";
 import { Button } from "@/components/ui/Button";
 import { computePuzzleRewards } from "@/features/meta/rewards/computePuzzleRewards";
 import { useGameFeedback } from "@/hooks/useGameFeedback";
@@ -220,7 +219,6 @@ export function PuzzleScreen() {
           </div>
         </div>
       </AppShell>
-      <BottomNav />
 
       {inputLocked && (
         <div
