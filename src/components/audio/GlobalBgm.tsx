@@ -166,11 +166,14 @@ export function GlobalBgm() {
       const g = ensureGraph();
       if (!g) return;
       const { ctx, audio } = g;
-      resumeCtxIfNeeded(ctx);
       const nextSrc = publicAssetPath(nextTrack);
 
       const doPlay = async () => {
         try {
+          // ctx.resume()가 사용자 제스처 없이 실패하면 출력이 0이라 "BGM이 없음"처럼 들림
+          if (ctx.state === "suspended") {
+            await ctx.resume();
+          }
           await audio.play();
           gainFadeTo(targetVolume, FADE_IN_MS);
         } catch {

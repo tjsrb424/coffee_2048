@@ -3,8 +3,6 @@
 import { motion, useReducedMotion } from "framer-motion";
 import { forwardRef } from "react";
 import { cn } from "@/lib/utils";
-import { useAppStore } from "@/stores/useAppStore";
-import { playUiClick } from "@/lib/sfx";
 
 type MotionButtonProps = React.ComponentPropsWithoutRef<typeof motion.button>;
 
@@ -15,8 +13,6 @@ export type ButtonProps = Omit<MotionButtonProps, "variant"> & {
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   function Button({ className, variant = "primary", children, ...props }, ref) {
     const reduce = useReducedMotion();
-    const soundOn = useAppStore((s) => s.settings.soundOn);
-    const userOnClick = props.onClick;
     return (
       <motion.button
         ref={ref}
@@ -34,10 +30,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
           className,
         )}
         {...props}
-        onClick={(e) => {
-          if (soundOn) playUiClick();
-          userOnClick?.(e);
-        }}
+        data-ui-click="true"
       >
         {children}
       </motion.button>
