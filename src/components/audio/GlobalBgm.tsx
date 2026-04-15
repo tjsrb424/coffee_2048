@@ -5,8 +5,6 @@ import { usePathname } from "next/navigation";
 import { useAppStore } from "@/stores/useAppStore";
 import { publicAssetPath } from "@/lib/publicAssetPath";
 
-type FadeJob = { raf: number; token: number };
-
 function easeOutCubic(t: number) {
   return 1 - Math.pow(1 - t, 3);
 }
@@ -34,41 +32,36 @@ export function GlobalBgm() {
   const targetVolume = reducedMotion ? 0.22 : 0.28;
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
-  const fadeRef = useRef<FadeJob>({ raf: 0, token: 0 });
+  const ctxRef = useRef<AudioContext | null>(null);
+  const gainRef = useRef<GainNode | null>(null);
+  const srcRef = useRef<MediaElementAudioSourceNode | null>(null);
   const gestureHandlerRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     const onReq = (ev: Event) => {
       const audio = audioRef.current;
-      if (!audio) return;
-      if (audio.paused || audio.volume <= 0.0005) return;
+      const ctx = ctxRef.current;
+      const gain = gainRef.current;
+      if (!audio || !ctx || !gain) return;
+      if (audio.paused) return;
 
       const detail = (ev as CustomEvent<{ ms?: number }>).detail;
       const ms = Math.max(0, detail?.ms ?? 1200);
       if (ms <= 0) return;
 
-      // 기존 페이드/전환과 충돌하지 않게 토큰 기반으로 단일 페이드만 유지
-      const job = fadeRef.current;
-      if (job.raf) cancelAnimationFrame(job.raf);
-      job.raf = 0;
-      job.token += 1;
-      const jobToken = job.token;
-
-      const from = audio.volume;
-      const startAt = performance.now();
-      const step = (now: number) => {
-        if (fadeRef.current.token !== jobToken) return;
-        const rawT = Math.min(1, (now - startAt) / ms);
-        const t = easeOutCubic(rawT);
-        audio.volume = from + (0 - from) * t;
-        if (rawT < 1) {
-          fadeRef.current.raf = requestAnimationFrame(step);
-        } else {
-          fadeRef.current.raf = 0;
-        }
-      };
-      fadeRef.current.raf = requestAnimationFrame(step);
+      // Web Audio gain 램프로 확실하게 페이드아웃
+      const now = ctx.currentTime;
+      const dur = ms / 1000;
+      const from = gain.gain.value;
+      gain.gain.cancelScheduledValues(now);
+      gain.gain.setValueAtTime(from, now);
+      // 감성: 초반은 조금 더 남기고(이징), 후반에 더 부드럽게 꺼짐
+      const mid = now + Math.max(0.02, dur * 0.55);
+      const end = now + Math.max(0.04, dur);
+      const midVal = from * (1 - easeOutCubic(0.55));
+      gain.gain.linearRampToValueAtTime(Math.max(0.0001, midVal), mid);
+      gain.gain.linearRampToValueAtTime(0.0001, end);
     };
 
     window.addEventListener("coffee:request-bgm-fadeout", onReq as EventListener);
@@ -84,40 +77,8 @@ export function GlobalBgm() {
     if (typeof window === "undefined") return;
 
     const FADE_OUT_MS = 1200;
-    const SWITCH_FADE_OUT_MS = 900;
+    const SWITCH_FADE_OUT_MS = 950;
     const FADE_IN_MS = 950;
-
-    const cancelFade = () => {
-      const job = fadeRef.current;
-      if (job.raf) cancelAnimationFrame(job.raf);
-      job.raf = 0;
-      job.token += 1;
-    };
-
-    const fadeTo = (to: number, ms: number, onDone?: () => void) => {
-      const audio = audioRef.current;
-      if (!audio) {
-        onDone?.();
-        return;
-      }
-      cancelFade();
-      const jobToken = fadeRef.current.token;
-      const from = audio.volume;
-      const startAt = performance.now();
-      const step = (now: number) => {
-        if (fadeRef.current.token !== jobToken) return;
-        const rawT = Math.min(1, (now - startAt) / ms);
-        const t = easeOutCubic(rawT);
-        audio.volume = from + (to - from) * t;
-        if (rawT < 1) {
-          fadeRef.current.raf = requestAnimationFrame(step);
-        } else {
-          fadeRef.current.raf = 0;
-          onDone?.();
-        }
-      };
-      fadeRef.current.raf = requestAnimationFrame(step);
-    };
 
     const detachGestureStart = () => {
       const handler = gestureHandlerRef.current;
@@ -132,30 +93,86 @@ export function GlobalBgm() {
         const a = new Audio();
         a.loop = true;
         a.preload = "auto";
-        a.volume = 0;
+        // 볼륨은 Web Audio gain에서 제어
+        a.volume = 1;
         audioRef.current = a;
       }
       return audioRef.current;
     };
 
+    const ensureGraph = () => {
+      if (!ctxRef.current || ctxRef.current.state === "closed") {
+        const Ctx =
+          window.AudioContext ??
+          (window as unknown as { webkitAudioContext?: typeof AudioContext })
+            .webkitAudioContext;
+        if (!Ctx) return null;
+        ctxRef.current = new Ctx();
+      }
+      const ctx = ctxRef.current;
+      if (!ctx) return null;
+
+      if (!gainRef.current) {
+        const g = ctx.createGain();
+        g.gain.value = 0.0001;
+        g.connect(ctx.destination);
+        gainRef.current = g;
+      }
+      const gain = gainRef.current;
+
+      const audio = ensureAudio();
+      if (!srcRef.current) {
+        // MediaElementSource는 동일 audio element에 대해 1회만 생성 가능
+        srcRef.current = ctx.createMediaElementSource(audio);
+        srcRef.current.connect(gain);
+      }
+      return { ctx, gain, audio };
+    };
+
+    const resumeCtxIfNeeded = (ctx: AudioContext) => {
+      if (ctx.state === "suspended") void ctx.resume().catch(() => {});
+    };
+
+    const gainFadeTo = (to: number, ms: number, onDone?: () => void) => {
+      const g = gainRef.current;
+      const ctx = ctxRef.current;
+      if (!g || !ctx) {
+        onDone?.();
+        return;
+      }
+      const now = ctx.currentTime;
+      const dur = Math.max(0.01, ms / 1000);
+      const from = g.gain.value;
+      g.gain.cancelScheduledValues(now);
+      g.gain.setValueAtTime(from, now);
+      g.gain.linearRampToValueAtTime(Math.max(0.0001, to), now + dur);
+      if (onDone) {
+        window.setTimeout(onDone, ms + 20);
+      }
+    };
+
     const stopWithFade = () => {
       detachGestureStart();
-      const audio = audioRef.current;
-      if (!audio) return;
-      fadeTo(0, FADE_OUT_MS, () => {
+      const g = ensureGraph();
+      if (!g) return;
+      const { audio } = g;
+      gainFadeTo(0, FADE_OUT_MS, () => {
         audio.pause();
         audio.currentTime = 0;
       });
     };
 
     const startOrSwitch = async (nextTrack: string) => {
-      const audio = ensureAudio();
+      const g = ensureGraph();
+      if (!g) return;
+      const { ctx, audio } = g;
+      resumeCtxIfNeeded(ctx);
       const nextSrc = publicAssetPath(nextTrack);
 
       const doPlay = async () => {
         try {
           await audio.play();
-          fadeTo(targetVolume, FADE_IN_MS);
+          gainFadeTo(targetVolume, FADE_IN_MS);
         } catch {
           // 사용자 제스처 전 재생 실패 대비
           if (gestureHandlerRef.current) return;
@@ -177,8 +194,8 @@ export function GlobalBgm() {
       }
 
       // 트랙 전환: 기존은 천천히 페이드아웃 후 교체
-      if (!audio.paused && audio.volume > 0.001) {
-        fadeTo(0, SWITCH_FADE_OUT_MS, () => {
+      if (!audio.paused) {
+        gainFadeTo(0, SWITCH_FADE_OUT_MS, () => {
           audio.pause();
           audio.currentTime = 0;
           audio.src = nextSrc;
@@ -196,7 +213,6 @@ export function GlobalBgm() {
       stopWithFade();
       return () => {
         detachGestureStart();
-        cancelFade();
       };
     }
 
@@ -204,7 +220,6 @@ export function GlobalBgm() {
 
     return () => {
       detachGestureStart();
-      cancelFade();
     };
   }, [soundOn, track, targetVolume]);
 
