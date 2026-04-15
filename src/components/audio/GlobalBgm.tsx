@@ -36,6 +36,7 @@ export function GlobalBgm() {
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const fadeRef = useRef<FadeJob>({ raf: 0, token: 0 });
   const gestureHandlerRef = useRef<(() => void) | null>(null);
+  const lastTrackRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -151,6 +152,7 @@ export function GlobalBgm() {
 
     if (!soundOn || !track) {
       stopWithFade();
+      lastTrackRef.current = track;
       return () => {
         detachGestureStart();
         cancelFade();
@@ -158,12 +160,54 @@ export function GlobalBgm() {
     }
 
     void startOrSwitch(track);
+    lastTrackRef.current = track;
 
     return () => {
       detachGestureStart();
       cancelFade();
     };
   }, [soundOn, track, targetVolume]);
+
+  // 라우트 전환이 hard navigation(리로드)처럼 느껴질 때도,
+  // 퍼즐 진입 버튼을 누르는 순간부터 페이드가 시작되도록 이벤트 훅을 둠.
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onReq = (ev: Event) => {
+      const audio = audioRef.current;
+      if (!audio) return;
+      const detail = (ev as CustomEvent<{ ms?: number }>).detail;
+      const ms = Math.max(0, detail?.ms ?? 1200);
+      if (ms <= 0) return;
+      // 현재 트랙이 있을 때만 부드럽게 내려줌
+      if (!audio.paused && audio.volume > 0.0005) {
+        const startVol = audio.volume;
+        const startAt = performance.now();
+        const tokenBefore = fadeRef.current.token;
+        const step = (now: number) => {
+          if (fadeRef.current.token !== tokenBefore) return;
+          const rawT = Math.min(1, (now - startAt) / ms);
+          const t = easeOutCubic(rawT);
+          audio.volume = startVol + (0 - startVol) * t;
+          if (rawT < 1) {
+            fadeRef.current.raf = requestAnimationFrame(step);
+          } else {
+            fadeRef.current.raf = 0;
+          }
+        };
+        // 기존 페이드가 있으면 교체
+        if (fadeRef.current.raf) cancelAnimationFrame(fadeRef.current.raf);
+        fadeRef.current.raf = requestAnimationFrame(step);
+      }
+    };
+
+    window.addEventListener("coffee:request-bgm-fadeout", onReq as EventListener);
+    return () => {
+      window.removeEventListener(
+        "coffee:request-bgm-fadeout",
+        onReq as EventListener,
+      );
+    };
+  }, []);
 
   // 전역 컴포넌트: UI 없음
   return null;

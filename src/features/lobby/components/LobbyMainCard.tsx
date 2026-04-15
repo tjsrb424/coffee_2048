@@ -42,7 +42,13 @@ export function LobbyMainCard() {
             onClick={() => {
               lightTap();
               if (!consumeHeart()) return;
-              router.push("/puzzle");
+              // 퍼즐 진입은 BGM이 감성적으로 페이드아웃되도록 살짝 텀을 둠
+              window.dispatchEvent(
+                new CustomEvent("coffee:request-bgm-fadeout", { detail: { ms: 1200 } }),
+              );
+              window.setTimeout(() => {
+                router.push("/puzzle");
+              }, 900);
             }}
           >
             퍼즐 시작
