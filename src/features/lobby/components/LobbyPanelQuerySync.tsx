@@ -15,7 +15,7 @@ export function LobbyPanelQuerySync({ onCafePanelFromQuery }: Props) {
   const searchParams = useSearchParams();
 
   useEffect(() => {
-    if (searchParams.get("panel") === "cafe") {
+    if (searchParams?.get("panel") === "cafe") {
       onCafePanelFromQuery();
       if (typeof window !== "undefined") {
         const base = (process.env.NEXT_PUBLIC_BASE_PATH ?? "").replace(

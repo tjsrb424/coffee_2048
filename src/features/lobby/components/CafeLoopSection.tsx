@@ -4,6 +4,8 @@ import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { BeanIcon } from "@/components/ui/BeanIcon";
+import { CoinIcon } from "@/components/ui/CoinIcon";
 import { DRINK_MENU_TEXT_IDS } from "@/data/drinkMenuTextIds";
 import { getCafeRuntimeModifiers } from "@/features/meta/balance/cafeModifiers";
 import {
@@ -15,6 +17,7 @@ import type { DrinkMenuId } from "@/features/meta/types/gameState";
 import { t } from "@/locale/i18n";
 import { useAppStore } from "@/stores/useAppStore";
 import { useGameFeedback } from "@/hooks/useGameFeedback";
+import { publicAssetPath } from "@/lib/publicAssetPath";
 import { cn } from "@/lib/utils";
 
 export type CafeLoopSectionKey = "roast" | "craft" | "display";
@@ -65,32 +68,46 @@ export function CafeLoopSection({
     <div className="space-y-4">
       {show("roast") && (
       <Card className="p-4">
-        <div className="text-xs font-semibold uppercase tracking-wide text-coffee-600/60">
-          {t("cafe.loop.roast.heading")}
-        </div>
-        <p className="mt-2 text-sm text-coffee-800">
-          {t("cafe.loop.roast.line", {
-            cost: m.roastBeanCost,
-            yield: m.shotYield,
-            max: m.maxShots,
-          })}
-        </p>
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
-          <div className="text-sm font-semibold text-coffee-900">
-            {t("cafe.loop.roast.shotsLabel")}{" "}
-            <span className="tabular-nums text-coffee-700">{shots}</span>
-            {t("cafe.loop.roast.shotsUnit")}
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="inline-flex items-center gap-1.5 rounded-2xl bg-cream-200/60 px-2.5 py-1.5 text-xs font-semibold tabular-nums text-coffee-900 ring-1 ring-coffee-600/5">
+              <BeanIcon size={16} className="opacity-95" />
+              <span>{beans}</span>
+              <span className="sr-only">원두</span>
+            </div>
+            <div className="inline-flex items-center gap-1.5 rounded-2xl bg-cream-200/60 px-2.5 py-1.5 text-xs font-semibold tabular-nums text-coffee-900 ring-1 ring-coffee-600/5">
+              <span className="grid h-4 w-4 place-items-center rounded-full bg-coffee-900/6 text-[10px] font-bold text-coffee-800 ring-1 ring-coffee-600/10">
+                샷
+              </span>
+              <span>{shots}</span>
+              <span className="sr-only">샷</span>
+            </div>
           </div>
+          <div className="text-[11px] font-semibold text-coffee-600/70">
+            최대 <span className="tabular-nums">{m.maxShots}</span>샷
+          </div>
+        </div>
+
+        <div className="mt-3 flex justify-center">
           <Button
             type="button"
             variant="soft"
+            className="h-auto min-h-[3rem] w-full max-w-[18rem] flex-col gap-1 py-2.5"
             disabled={!canRoast}
             onClick={() => {
               lightTap();
               roastOnce();
             }}
           >
-            {t("cafe.loop.roast.cta")}
+            <span className="text-[15px] font-semibold leading-tight">
+              {t("cafe.loop.roast.ctaLine1")}
+            </span>
+            <span className="text-[11px] font-semibold leading-snug text-coffee-700/90">
+              {t("cafe.loop.roast.ctaLine2", {
+                cost: m.roastBeanCost,
+                yield: m.shotYield,
+              })}
+            </span>
           </Button>
         </div>
         <p
@@ -100,7 +117,7 @@ export function CafeLoopSection({
           )}
         >
           {canRoast
-            ? t("cafe.loop.roast.hintOk")
+            ? t("cafe.loop.roast.hintOk", { cost: m.roastBeanCost, yield: m.shotYield })
             : roastBlockReason}
         </p>
       </Card>
@@ -113,9 +130,6 @@ export function CafeLoopSection({
             <div className="text-xs font-semibold uppercase tracking-wide text-coffee-600/60">
               {t("cafe.loop.craft.heading")}
             </div>
-            <p className="mt-2 text-sm text-coffee-800">
-              {t("cafe.loop.craft.intro")}
-            </p>
           </div>
         </div>
         <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-cream-200/50 px-3 py-2 ring-1 ring-coffee-600/5">
@@ -161,13 +175,6 @@ export function CafeLoopSection({
         <div className="text-xs font-semibold uppercase tracking-wide text-coffee-600/60">
           {t("cafe.loop.display.heading")}
         </div>
-        <p className="mt-2 text-sm text-coffee-800">
-          {displaySellingActive
-            ? t("cafe.loop.display.tickWhenSelling", {
-                sec: (m.autoSellIntervalMs / 1000).toFixed(1),
-              })
-            : t("cafe.loop.display.tickWhenIdle")}
-        </p>
         {totalStock === 0 && show("craft") ? (
           <div className="mt-3 rounded-2xl border border-accent-soft/25 bg-cream-50/90 px-3 py-3 ring-1 ring-coffee-600/8">
             <p className="text-xs font-semibold text-coffee-900">
@@ -209,9 +216,6 @@ export function CafeLoopSection({
             >
               {t("cafe.loop.display.startCta")}
             </Button>
-            <p className="mt-2 text-center text-[11px] leading-relaxed text-coffee-600/68">
-              {t("cafe.loop.display.startHint")}
-            </p>
           </div>
         ) : null}
         {displaySellingActive && totalStock > 0 ? (
@@ -219,27 +223,43 @@ export function CafeLoopSection({
             {t("cafe.loop.display.sellingBadge")}
           </p>
         ) : null}
-        <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+        <div className="mt-4 grid grid-cols-3 gap-2.5 text-center">
           {MENU_ORDER.map((id) => (
             <div
               key={id}
               className={cn(
-                "rounded-2xl px-2 py-3 ring-1",
+                "rounded-3xl px-2 py-3 ring-1",
                 menuStock[id] > 0
-                  ? "bg-cream-50/95 ring-accent-soft/25 shadow-[inset_0_0_0_1px_rgba(196,154,108,0.12)]"
-                  : "bg-cream-200/45 opacity-60 ring-coffee-600/5",
+                  ? "bg-cream-50/95 ring-accent-soft/25 shadow-[inset_0_0_0_1px_rgb(196_154_108_/_0.12)]"
+                  : "bg-cream-200/45 ring-coffee-600/5",
               )}
             >
-              <div className="text-[11px] font-semibold text-coffee-600/70">
+              <div className="text-[11px] font-semibold text-coffee-700/80">
                 {t(DRINK_MENU_TEXT_IDS[id].nameTextId)}
               </div>
-              <div className="mt-1 text-lg font-bold tabular-nums text-coffee-900">
-                {menuStock[id]}
+              <div className="mt-2 flex justify-center" aria-hidden>
+                <Image
+                  src={drinkImagePath(id)}
+                  alt=""
+                  width={192}
+                  height={192}
+                  className={cn(
+                    "h-20 w-20 object-contain drop-shadow-[0_10px_18px_rgb(90_61_43_/_0.18)]",
+                    menuStock[id] === 0 && "opacity-50 saturate-[0.8]",
+                  )}
+                  priority={false}
+                />
               </div>
-              <div className="mt-1 text-[10px] text-coffee-600/60">
-                {t("cafe.loop.display.coinLine", {
-                  price: CAFE_ECONOMY.sellPrice[id] + m.sellBonus,
-                })}
+              <div className="mt-2 text-sm font-bold tabular-nums text-coffee-900">
+                현재 {menuStock[id]}잔
+              </div>
+              <div className="mt-1 inline-flex items-center justify-center gap-1 text-[10px] font-semibold text-coffee-600/70">
+                <CoinIcon size={14} className={menuStock[id] === 0 ? "opacity-55" : ""} />
+                <span>
+                  {t("cafe.loop.display.coinLine", {
+                    price: CAFE_ECONOMY.sellPrice[id] + m.sellBonus,
+                  })}
+                </span>
               </div>
             </div>
           ))}
@@ -260,6 +280,19 @@ export function CafeLoopSection({
       )}
     </div>
   );
+}
+
+function drinkImagePath(id: DrinkMenuId): string {
+  switch (id) {
+    case "americano":
+      return publicAssetPath("/images/drink/아메리카노.png");
+    case "latte":
+      return publicAssetPath("/images/drink/카페라떼.png");
+    case "affogato":
+      return publicAssetPath("/images/drink/아포가토.png");
+    default:
+      return publicAssetPath("/images/drink/아메리카노.png");
+  }
 }
 
 function menuEmoji(id: DrinkMenuId): string {
@@ -315,7 +348,7 @@ function MenuCraftCard({
         can
           ? cn(
               "bg-cream-50/95 ring-accent-soft/35",
-              "shadow-[inset_0_0_0_1px_rgba(196,154,108,0.14),0_10px_26px_-18px_rgba(90,61,43,0.45)]",
+              "shadow-[0_10px_26px_-18px_rgb(90_61_43_/_0.45)] ring-1 ring-inset ring-accent-soft/20",
             )
           : "bg-cream-200/45 ring-coffee-600/5",
       )}
@@ -337,17 +370,11 @@ function MenuCraftCard({
         >
           {id === "americano" || id === "latte" || id === "affogato" ? (
             <Image
-              src={
-                id === "americano"
-                  ? "/images/drink/아메리카노.png"
-                  : id === "latte"
-                    ? "/images/drink/카페라떼.png"
-                    : "/images/drink/아포가토.png"
-              }
+              src={drinkImagePath(id)}
               alt=""
               width={256}
               height={256}
-              className="pointer-events-none h-32 w-32 -translate-y-1 object-contain drop-shadow-[0_14px_26px_rgba(90,61,43,0.22)]"
+              className="pointer-events-none h-32 w-32 -translate-y-1 object-contain drop-shadow-[0_14px_26px_rgb(90_61_43_/_0.22)]"
               priority
             />
           ) : (

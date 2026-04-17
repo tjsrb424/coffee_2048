@@ -1,6 +1,9 @@
 "use client";
 
 import { Card } from "@/components/ui/Card";
+import { BeanIcon } from "@/components/ui/BeanIcon";
+import { CoinIcon } from "@/components/ui/CoinIcon";
+import { HeartIcon } from "@/components/ui/HeartIcon";
 import { t } from "@/locale/i18n";
 import { useAppStore } from "@/stores/useAppStore";
 
@@ -40,16 +43,18 @@ export function LastRunCard() {
           </div>
         </div>
         <div>
-          <div className="text-xs font-semibold text-coffee-600/70">
-            {t("lastRun.coins")}
+          <div className="flex items-center gap-1 text-xs font-semibold text-coffee-600/70">
+            <CoinIcon size={16} className="opacity-95" />
+            <span className="sr-only">{t("lastRun.coins")}</span>
           </div>
           <div className="mt-1 text-lg font-bold tabular-nums text-accent-soft">
             +{p.lastRunCoins}
           </div>
         </div>
         <div>
-          <div className="text-xs font-semibold text-coffee-600/70">
-            {t("lastRun.beans")}
+          <div className="flex items-center gap-1 text-xs font-semibold text-coffee-600/70">
+            <BeanIcon size={16} className="opacity-95" />
+            <span className="sr-only">{t("lastRun.beans")}</span>
           </div>
           <div className="mt-1 text-lg font-bold tabular-nums text-accent-mint">
             +{p.lastRunBeans}
@@ -57,8 +62,9 @@ export function LastRunCard() {
         </div>
       </div>
       {p.lastRunHearts > 0 && (
-        <p className="mt-3 text-xs font-semibold text-coffee-700">
-          {t("lastRun.heartsBonus", { hearts: p.lastRunHearts })}
+        <p className="mt-3 flex items-start gap-1.5 text-xs font-semibold text-coffee-700">
+          <HeartIcon size={16} className="mt-0.5 shrink-0 opacity-95" />
+          <span>{t("lastRun.heartsBonus", { hearts: p.lastRunHearts })}</span>
         </p>
       )}
     </Card>

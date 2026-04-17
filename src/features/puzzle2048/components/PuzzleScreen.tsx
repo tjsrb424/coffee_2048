@@ -5,8 +5,10 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, motion } from "framer-motion";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/Button";
+import { HeartIcon } from "@/components/ui/HeartIcon";
 import { computePuzzleRewards } from "@/features/meta/rewards/computePuzzleRewards";
 import { useGameFeedback } from "@/hooks/useGameFeedback";
+import { runSceneTransition } from "@/lib/runSceneTransition";
 import { useAppStore } from "@/stores/useAppStore";
 import { useLobbyFxStore } from "@/stores/useLobbyFxStore";
 import { useLockDocumentScroll } from "../hooks/useLockDocumentScroll";
@@ -111,7 +113,7 @@ export function PuzzleScreen() {
     });
     // 로비 HUD로 “보상이 흘러 들어오는” 1회 연출 트리거
     useLobbyFxStore.getState().pingPuzzleRewards(resultPayload.rewards);
-    router.push("/lobby");
+    runSceneTransition(() => router.push("/lobby"), "/lobby");
   }, [applyOutcome, resultPayload, router]);
 
   const retryFromResult = useCallback(() => {
@@ -319,8 +321,9 @@ export function PuzzleScreen() {
               </p>
               <h2
                 id="no-heart-title"
-                className="mt-1 text-2xl font-bold tracking-tight text-coffee-900"
+                className="mt-1 flex items-center gap-2 text-2xl font-bold tracking-tight text-coffee-900"
               >
+                <HeartIcon size={28} className="shrink-0 opacity-95" />
                 하트가 부족해요
               </h2>
               <p className="mt-2 text-sm leading-relaxed text-coffee-700">
@@ -332,7 +335,7 @@ export function PuzzleScreen() {
                   onClick={() => {
                     lightTap();
                     setNoHeartOpen(false);
-                    router.push("/lobby");
+                    runSceneTransition(() => router.push("/lobby"), "/lobby");
                   }}
                 >
                   로비로

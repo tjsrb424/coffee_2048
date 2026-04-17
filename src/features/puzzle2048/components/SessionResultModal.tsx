@@ -2,6 +2,9 @@
 
 import { AnimatePresence, motion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
+import { BeanIcon } from "@/components/ui/BeanIcon";
+import { CoinIcon } from "@/components/ui/CoinIcon";
+import { HeartIcon } from "@/components/ui/HeartIcon";
 import {
   SESSION_TARGET_HIGHEST_TILE,
   isSessionGoalMet,
@@ -94,27 +97,30 @@ export function SessionResultModal({
                 로비에 들어오면 적용
               </div>
               <div className="mt-2 grid grid-cols-3 gap-2 text-center">
-                <div className="rounded-2xl bg-cream-50/70 px-2 py-2 ring-1 ring-coffee-600/10">
-                  <div className="text-[10px] font-semibold text-coffee-600/70">
-                    코인
+                <div className="rounded-2xl bg-cream-50/70 px-2 py-2.5 ring-1 ring-coffee-600/10">
+                  <div className="flex h-6 items-center justify-center">
+                    <CoinIcon size={18} className="h-[18px] w-[18px] opacity-95" />
+                    <span className="sr-only">코인</span>
                   </div>
-                  <div className="mt-0.5 text-base font-bold tabular-nums text-accent-soft">
+                  <div className="mt-1 text-[0.95rem] font-bold leading-none tabular-nums text-accent-soft">
                     +{payload.rewards.coins}
                   </div>
                 </div>
-                <div className="rounded-2xl bg-cream-50/70 px-2 py-2 ring-1 ring-coffee-600/10">
-                  <div className="text-[10px] font-semibold text-coffee-600/70">
-                    원두
+                <div className="rounded-2xl bg-cream-50/70 px-2 py-2.5 ring-1 ring-coffee-600/10">
+                  <div className="flex h-6 items-center justify-center">
+                    <BeanIcon size={16} className="h-4 w-4 opacity-95" />
+                    <span className="sr-only">원두</span>
                   </div>
-                  <div className="mt-0.5 text-base font-bold tabular-nums text-accent-mint">
+                  <div className="mt-1 text-[0.95rem] font-bold leading-none tabular-nums text-accent-mint">
                     +{payload.rewards.beans}
                   </div>
                 </div>
-                <div className="rounded-2xl bg-cream-50/70 px-2 py-2 ring-1 ring-coffee-600/10">
-                  <div className="text-[10px] font-semibold text-coffee-600/70">
-                    하트
+                <div className="rounded-2xl bg-cream-50/70 px-2 py-2.5 ring-1 ring-coffee-600/10">
+                  <div className="flex h-6 items-center justify-center">
+                    <HeartIcon size={18} className="h-[18px] w-[18px] opacity-95" />
+                    <span className="sr-only">하트</span>
                   </div>
-                  <div className="mt-0.5 text-base font-bold tabular-nums text-coffee-900">
+                  <div className="mt-1 text-[0.95rem] font-bold leading-none tabular-nums text-coffee-900">
                     +{payload.rewards.hearts}
                   </div>
                 </div>

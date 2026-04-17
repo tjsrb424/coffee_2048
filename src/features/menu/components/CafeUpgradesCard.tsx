@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { CoinIcon } from "@/components/ui/CoinIcon";
 import {
   type CafeUpgradeTrack,
   CAFE_UPGRADE_MAX_LEVEL,
@@ -44,9 +45,13 @@ export function CafeUpgradesCard() {
       </div>
 
       <div className="rounded-2xl bg-cream-200/50 px-3 py-2 text-xs text-coffee-700 ring-1 ring-coffee-600/5">
-        현재 보정 — 로스팅 원두 {m.roastBeanCost}단 / 샷 +{m.shotYield} / 최대{" "}
-        {m.maxShots}샷 · 판매 간격 약 {(m.autoSellIntervalMs / 1000).toFixed(1)}
-        초(개시 후) · 판매 보너스 +{m.sellBonus}코인
+        현재 보정 — 로스팅 원두 {m.roastBeanCost}단 / 샷 +{m.shotYield} / 최대 {m.maxShots}샷 ·
+        판매 간격 약 {(m.autoSellIntervalMs / 1000).toFixed(1)}초(개시 후) · 판매 보너스 +
+        <span className="inline-flex items-center gap-0.5 align-middle">
+          <CoinIcon size={14} className="opacity-95" />
+          {m.sellBonus}
+          <span className="sr-only">코인</span>
+        </span>
       </div>
 
       <ul className="space-y-3">
@@ -110,7 +115,15 @@ function UpgradeRow({
           disabled={!canBuy}
           onClick={onBuy}
         >
-          {maxed ? "만렙" : `${cost} 코인`}
+          {maxed ? (
+            "만렙"
+          ) : (
+            <span className="inline-flex items-center gap-1">
+              <CoinIcon size={16} className="opacity-95" />
+              {cost}
+              <span className="sr-only">코인</span>
+            </span>
+          )}
         </Button>
       </div>
     </li>

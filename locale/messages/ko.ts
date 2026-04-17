@@ -16,18 +16,18 @@ export const koMessages = {
 
   "lobby.sheet.roast.title": "로스터",
   "lobby.sheet.roast.tagline": "베이스를 준비해요",
-  "lobby.sheet.roast.description": "원두 → 샷. 부족하면 먼저 채워요.",
-  "lobby.sheet.roast.body": "원두를 넣고 베이스 샷을 만들어 주세요.",
+  "lobby.sheet.roast.description": "원두를 볶아서 샷으로 만드는 곳입니다.",
+  "lobby.sheet.roast.body": "원두를 넣고 로스팅을 시작해요.",
 
-  "lobby.sheet.showcase.title": "쇼케이스",
+  "lobby.sheet.showcase.title": "작업대",
   "lobby.sheet.showcase.tagline": "메뉴를 만들어 진열해요",
-  "lobby.sheet.showcase.description": "제작 → 진열. 가능한 카드부터 눌러요.",
+  "lobby.sheet.showcase.description": "샷을 이용해 커피를 제작하는 곳입니다.",
   "lobby.sheet.showcase.body": "만들 수 있는 메뉴부터 눌러 재고를 채워요.",
 
   "lobby.sheet.counter.title": "카운터",
-  "lobby.sheet.counter.tagline": "판매 흐름을 확인해요",
-  "lobby.sheet.counter.description": "진열이 비면 쇼케이스로 복구해요.",
-  "lobby.sheet.counter.body": "판매가 들어오는지, 진열이 남았는지 확인해요.",
+  "lobby.sheet.counter.tagline": "제작한 커피를 판매해요",
+  "lobby.sheet.counter.description": "진열 판매할 음료는 쇼케이스에서 제작해주세요",
+  "lobby.sheet.counter.body": "",
 
   "lobby.sheet.puzzle.title": "퍼즐",
   "lobby.sheet.puzzle.tagline": "한 판 시작",
@@ -54,11 +54,11 @@ export const koMessages = {
   "lobby.ops.showcaseStatus.selling": "진열 {{count}}잔 · 판매 중",
   "lobby.ops.showcaseStatus.empty": "진열 0잔 · {{hint}}",
 
-  "lobby.ops.offline.withCoins": "직전 오프라인 +{{coins}}코인",
+  "lobby.ops.offline.withCoinsLead": "직전 오프라인 +",
   "lobby.ops.offline.none": "오늘 기록 없음",
 
   "lobby.card.label.puzzle": "퍼즐",
-  "lobby.card.puzzle.stats": "하트 {{hearts}} · 베스트 타일 {{bestTile}}",
+  "lobby.card.puzzle.statsBestTile": "베스트 타일 {{bestTile}}",
   "lobby.card.puzzle.desc": "원두를 모으러 한 판 들어가요.",
   "lobby.card.puzzle.cta": "퍼즐 하기",
 
@@ -122,25 +122,24 @@ export const koMessages = {
   "cafe.loop.roast.shotsLabel": "베이스",
   "cafe.loop.roast.shotsUnit": "샷",
   "cafe.loop.roast.cta": "로스팅",
-  "cafe.loop.roast.hintOk": "베이스를 채우고 쇼케이스에서 잔을 만들어 진열해요.",
+  "cafe.loop.roast.ctaLine1": "로스팅",
+  "cafe.loop.roast.ctaLine2": "원두 -{{cost}}단 · 샷 +{{yield}}",
+  "cafe.loop.roast.hintOk": "원두 {{cost}}개로 샷 {{yield}}개를 만들 수 있습니다.",
   "cafe.loop.roast.blockFull":
     "베이스가 가득 찼어요. 판매로 샷을 비운 뒤 다시 로스팅해요.",
   "cafe.loop.roast.blockBeans": "원두가 {{need}}단 더 필요해요.",
 
   "cafe.loop.craft.heading": "메뉴 제작",
-  "cafe.loop.craft.intro": "가능한 카드부터 눌러 진열 재고를 채워요.",
   "cafe.loop.craft.resources": "지금 자원",
   "cafe.loop.craft.shots": "샷",
   "cafe.loop.craft.beans": "원두",
   "cafe.loop.craft.beansUnit": "단",
 
   "cafe.loop.display.heading": "진열 · 판매",
-  "cafe.loop.display.tickWhenIdle":
-    "잔을 채운 뒤 아래에서 판매를 개시하면, 코인이 조용히 쌓여요.",
-  "cafe.loop.display.tickWhenSelling":
-    "판매 중이에요. 약 {{sec}}초마다 한 잔씩, 아메 → 라떼 → 아포 순으로 나가요.",
+  "cafe.loop.display.tickWhenIdle": "",
+  "cafe.loop.display.tickWhenSelling": "",
   "cafe.loop.display.startCta": "판매 개시",
-  "cafe.loop.display.startHint": "개시한 뒤에만 진열이 줄고 코인이 들어와요.",
+  "cafe.loop.display.startHint": "",
   "cafe.loop.display.sellingBadge": "지금은 판매 세션이 켜져 있어요.",
   "cafe.loop.display.emptyTitle.craft": "진열이 비어 있어요",
   "cafe.loop.display.emptyHint.craft":
@@ -311,6 +310,7 @@ export const koMessages = {
   "hints.counter.saleAffection":
     "오늘의 손님 · 애정 +{{gained}}",
   "hints.counter.regularGift": "{{name}}이 {{note}}",
+  "hints.counter.regularGiftWithTip": "{{name}}이 {{note}} · +{{coins}}코인",
   "hints.counter.storyHeading": "스토리 조각",
   "hints.counter.storyUnlockFeed": "새 메모 · {{title}}",
 
@@ -324,8 +324,17 @@ export const koMessages = {
   "customer.generic.story.step1": "오늘의 기록",
   "customer.generic.story.step2": "작은 기록",
 
-  "gift.core.note1": "작은 메모를 남겼어요",
-  "gift.core.note2": "고마운 마음을 두고 갔어요",
+  // 핵심 손님 — 개인화된 흔적 문구(짧고 조용하게)
+  "gift.core.han_eun.note1": "창가 쪽에 조용히 두고 갔어요",
+  "gift.core.han_eun.note2": "오늘도 같은 자리였으면 해요",
+  "gift.core.hyo_im.note1": "따뜻한 마음을 살짝 얹어두고 가요",
+  "gift.core.hyo_im.note2": "다음엔 더 달콤한 걸로요",
+  "gift.core.seo_jun.note1": "늦은 시간, 덜어낸 숨을 두고 가요",
+  "gift.core.seo_jun.note2": "오늘은 여기서 잠깐 쉬어갈게요",
+  "gift.core.so_yeon.note1": "고마워요, 짧게 적어둘게요",
+  "gift.core.so_yeon.note2": "다음에 또 같은 온도로요",
+  "gift.core.dong_hyun.note1": "오늘은 이 정도면 충분했어요",
+  "gift.core.dong_hyun.note2": "정리해둔 마음을 두고 가요",
 
   "lastRun.title": "최근 퍼즐",
   "lastRun.empty": "아직 기록이 없어요. 퍼즐로 첫 온기를 남겨볼까요?",

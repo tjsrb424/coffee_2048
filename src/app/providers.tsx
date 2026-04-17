@@ -4,6 +4,8 @@ import { MotionConfig } from "framer-motion";
 import { GlobalBgm } from "@/components/audio/GlobalBgm";
 import { GlobalUiClickSound } from "@/components/audio/GlobalUiClickSound";
 import { GlobalCafeSellToast } from "@/components/economy/GlobalCafeSellToast";
+import { GlobalSceneTransition } from "@/components/system/GlobalSceneTransition";
+import { SafeClientBoundary } from "@/components/system/SafeClientBoundary";
 import { useHeartRegenTicker } from "@/hooks/useHeartRegenTicker";
 import { useReducedMotionPreference } from "@/hooks/useReducedMotionPreference";
 
@@ -13,11 +15,13 @@ export function Providers({ children }: { children: React.ReactNode }) {
 
   return (
     <MotionConfig reducedMotion={reduce ? "always" : "never"}>
-      <GlobalBgm />
-      <GlobalUiClickSound />
-      <GlobalCafeSellToast />
+      <SafeClientBoundary label="global-ui">
+        <GlobalBgm />
+        <GlobalUiClickSound />
+        <GlobalCafeSellToast />
+        <GlobalSceneTransition />
+      </SafeClientBoundary>
       {children}
     </MotionConfig>
   );
 }
-

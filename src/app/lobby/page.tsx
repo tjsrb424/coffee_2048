@@ -1,10 +1,10 @@
 import Image from "next/image";
 import { LobbyScreen } from "@/features/lobby/components/LobbyScreen";
+import { publicAssetPath } from "@/lib/publicAssetPath";
 
 export default function LobbyPage() {
-  // NOTE: `next/image`는 basePath/assetPrefix를 자동 적용한다.
-  // 여기서 수동으로 prefix를 붙이면 배포 환경에서 경로가 중복되어 404 → 흰 배경처럼 보일 수 있다.
-  const bgSrc = "/images/lobby/coffee-shop-bg.png";
+  /** GitHub Pages(`basePath`) 정적 배포에서 `/images`가 루트로 나가 404 나는 문제 방지 */
+  const bgSrc = publicAssetPath("/images/lobby/coffee-shop-bg.png");
 
   return (
     <div className="relative min-h-[100dvh] overflow-hidden">

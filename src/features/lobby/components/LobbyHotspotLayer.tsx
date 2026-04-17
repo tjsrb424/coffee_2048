@@ -49,14 +49,14 @@ export function LobbyHotspotLayer({
               height: `${h.rect.height}%`,
             }}
             className={cn(
-              "group pointer-events-auto absolute rounded-2xl transition-[box-shadow,transform,opacity] duration-200",
+              "group pointer-events-auto absolute rounded-2xl transition-[box-shadow_transform_opacity] duration-200",
               emphasized
                 ? cn(
-                    "ring-2 shadow-[0_0_0_3px_rgba(196,154,108,0.22)]",
+                    "ring-2 shadow-[0_0_0_3px_rgb(196_154_108_/_0.22)]",
                     lobbyAccentRingClass(themeId),
                     pulse && "ring-accent-soft/40",
                   )
-                : "ring-0 ring-transparent shadow-[inset_0_0_0_1px_rgba(90,61,43,0.08)]",
+                : "ring-0 ring-transparent shadow-[inset_0_0_0_1px_rgb(90_61_43_/_0.08)]",
               !emphasized && "hover:scale-[1.01] active:scale-[0.99]",
             )}
             aria-label={h.label}

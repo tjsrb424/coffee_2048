@@ -4,12 +4,14 @@ import { create } from "zustand";
 import { createJSONStorage, persist } from "zustand/middleware";
 import { SAMPLE_CUSTOMERS } from "@/data/customers";
 import { t } from "@/locale/i18n";
+import { useAppStore } from "@/stores/useAppStore";
 import type { DrinkMenuId } from "@/features/meta/types/gameState";
 import type {
   CustomerId,
   CustomerProfile,
   CustomerRuntimeState,
 } from "@/features/customers/types";
+import type { MessageId } from "@locale/messages/ko";
 import {
   clampStoryIndex,
   nextRuntimeStateOnAffectionGain,
@@ -77,6 +79,8 @@ export type RegularGiftPing = {
   giverName: string;
   /** 짧은 메모 문구(이미 번역된 문자열) */
   note: string;
+  /** 아주 작은 팁(코인) — 문구와 함께 조용히만 노출 */
+  tipCoins: number;
 };
 
 type CustomerStore = CustomerSaveState & {
@@ -126,6 +130,54 @@ type CustomerStore = CustomerSaveState & {
 const PROFILE_INDEX: CustomerIndex = Object.fromEntries(
   SAMPLE_CUSTOMERS.map((c) => [c.id, c]),
 );
+
+type CoreGiftProfile = {
+  /** 흔적 발생 확률(아주 미세한 차이만) */
+  chance: number;
+  /** 문구 메시지 id들(손님별 1~2개) */
+  noteTextIds: MessageId[];
+  /** 소액 팁 코인 범위(0이면 메모만) */
+  tipCoinsMin: number;
+  tipCoinsMax: number;
+};
+
+const CORE_GIFT_PROFILES: Partial<Record<CustomerId, CoreGiftProfile>> = {
+  // 한은: 고요하고 절제된 톤 — 메모 중심, 팁은 드물게 아주 작게
+  han_eun: {
+    chance: 0.045,
+    noteTextIds: ["gift.core.han_eun.note1", "gift.core.han_eun.note2"],
+    tipCoinsMin: 0,
+    tipCoinsMax: 2,
+  },
+  // 효임: 부드럽고 조용한 감사 — 소액 팁이 조금 더 자주
+  hyo_im: {
+    chance: 0.055,
+    noteTextIds: ["gift.core.hyo_im.note1", "gift.core.hyo_im.note2"],
+    tipCoinsMin: 1,
+    tipCoinsMax: 3,
+  },
+  // 서준: 늦은 밤의 짧은 인사 — 메모 위주, 팁은 아주 드물게
+  seo_jun: {
+    chance: 0.045,
+    noteTextIds: ["gift.core.seo_jun.note1", "gift.core.seo_jun.note2"],
+    tipCoinsMin: 0,
+    tipCoinsMax: 2,
+  },
+  // 소연: 가벼운 감사/메모 톤 — 메모 중심, 팁은 살짝
+  so_yeon: {
+    chance: 0.05,
+    noteTextIds: ["gift.core.so_yeon.note1", "gift.core.so_yeon.note2"],
+    tipCoinsMin: 0,
+    tipCoinsMax: 3,
+  },
+  // 동현: 단정하고 실용적인 톤 — 팁은 소액이지만 안정적으로
+  dong_hyun: {
+    chance: 0.052,
+    noteTextIds: ["gift.core.dong_hyun.note1", "gift.core.dong_hyun.note2"],
+    tipCoinsMin: 1,
+    tipCoinsMax: 4,
+  },
+};
 
 function defaultRuntimeState(profile: CustomerProfile): CustomerRuntimeState {
   return {
@@ -188,6 +240,33 @@ function pickWeighted(rng: () => number, ids: CustomerId[], weights: number[]): 
     if (r <= acc) return ids[i]!;
   }
   return ids[ids.length - 1] ?? SAMPLE_CUSTOMERS[0].id;
+}
+
+function pickIntInRange(rng: () => number, min: number, max: number): number {
+  const a = Math.min(min, max);
+  const b = Math.max(min, max);
+  if (b <= a) return a;
+  const u = (rng() % 10_000) / 10_000;
+  return a + Math.floor(u * (b - a + 1));
+}
+
+function computeCoreGift(
+  giverId: CustomerId,
+  rng: () => number,
+): { note: string; tipCoins: number } | null {
+  const profile = CORE_GIFT_PROFILES[giverId];
+  if (!profile) return null;
+  const noteId =
+    profile.noteTextIds[(rng() % profile.noteTextIds.length) | 0] ??
+    profile.noteTextIds[0];
+  const note = noteId ? t(noteId) : null;
+  if (!note) return null;
+  const tipCoins =
+    profile.tipCoinsMax > 0
+      ? pickIntInRange(rng, profile.tipCoinsMin, profile.tipCoinsMax)
+      : 0;
+  // tip이 0이 나오는 경우가 있어도 괜찮다(메모만 남김)
+  return { note, tipCoins };
 }
 
 function cupsForGuest(
@@ -398,24 +477,30 @@ export const useCustomerStore = create<CustomerStore>()(
           if (!st) return false;
           return st.isRegular || st.affection >= 6;
         });
-        const shouldGift =
-          nowGiftOk &&
-          eligibleCoreBuyers.length > 0 &&
-          (rng() % 10_000) / 10_000 < 0.05;
-        const giftGiverId = shouldGift
-          ? eligibleCoreBuyers[(rng() % eligibleCoreBuyers.length) | 0]
+
+        const candidateGiverId =
+          nowGiftOk && eligibleCoreBuyers.length > 0
+            ? eligibleCoreBuyers[(rng() % eligibleCoreBuyers.length) | 0]
+            : null;
+        const candidateGiftProfile = candidateGiverId
+          ? CORE_GIFT_PROFILES[candidateGiverId]
           : null;
+        const giftChance = candidateGiftProfile?.chance ?? 0.05;
+        const shouldGift =
+          candidateGiverId != null &&
+          (rng() % 10_000) / 10_000 < giftChance;
+        const giftGiverId = shouldGift ? candidateGiverId : null;
         const giftGiverProfile = giftGiverId ? PROFILE_INDEX[giftGiverId] : null;
         const giftGiverName = giftGiverProfile ? t(giftGiverProfile.nameTextId) : null;
-        const giftNote = shouldGift
-          ? (() => {
-              const notes = [
-                t("gift.core.note1"),
-                t("gift.core.note2"),
-              ];
-              return notes[(rng() % notes.length) | 0] ?? notes[0]!;
-            })()
-          : null;
+        const computedGift =
+          shouldGift && giftGiverId ? computeCoreGift(giftGiverId, rng) : null;
+        const giftNote = computedGift?.note ?? null;
+        const giftTipCoins = computedGift?.tipCoins ?? 0;
+
+        if (shouldGift && giftTipCoins > 0) {
+          const prevCoins = useAppStore.getState().playerResources.coins;
+          useAppStore.getState().patchPlayerResources({ coins: prevCoins + giftTipCoins });
+        }
 
         const featuredBatch = perBuyer[featured];
         if (!featuredBatch) {
@@ -435,7 +520,7 @@ export const useCustomerStore = create<CustomerStore>()(
               },
               lastRegularGiftPing:
                 shouldGift && giftGiverName && giftNote
-                  ? { atMs: now, giverName: giftGiverName, note: giftNote }
+                  ? { atMs: now, giverName: giftGiverName, note: giftNote, tipCoins: giftTipCoins }
                   : s.lastRegularGiftPing,
               lastRegularGiftAtMs: shouldGift ? now : s.lastRegularGiftAtMs,
             };
@@ -497,7 +582,7 @@ export const useCustomerStore = create<CustomerStore>()(
               : s.lastStoryUnlockPing,
             lastRegularGiftPing:
               shouldGift && giftGiverName && giftNote
-                ? { atMs: now, giverName: giftGiverName, note: giftNote }
+                ? { atMs: now, giverName: giftGiverName, note: giftNote, tipCoins: giftTipCoins }
                 : s.lastRegularGiftPing,
             lastRegularGiftAtMs: shouldGift ? now : s.lastRegularGiftAtMs,
           };

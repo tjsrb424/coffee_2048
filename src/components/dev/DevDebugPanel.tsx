@@ -4,6 +4,9 @@ import { useCallback, useMemo, useState } from "react";
 import { motion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
+import { BeanIcon } from "@/components/ui/BeanIcon";
+import { CoinIcon } from "@/components/ui/CoinIcon";
+import { HeartIcon } from "@/components/ui/HeartIcon";
 import { useGameFeedback } from "@/hooks/useGameFeedback";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/useAppStore";
@@ -116,7 +119,7 @@ export function DevDebugPanel({ className }: { className?: string }) {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0 }}
           transition={{ type: "spring", stiffness: 420, damping: 32 }}
-          className="pointer-events-auto mt-2 w-[min(92vw,420px)]"
+          className="pointer-events-auto mt-2 w-full max-w-[420px] min-w-0"
         >
           <Card className="space-y-3 p-4">
             <div className="flex items-start justify-between gap-3">
@@ -124,8 +127,24 @@ export function DevDebugPanel({ className }: { className?: string }) {
                 <div className="text-xs font-semibold uppercase tracking-wide text-coffee-600/60">
                   개발자 디버그
                 </div>
-                <div className="mt-1 text-sm font-bold text-coffee-900">
-                  coins {coins} · beans {beans} · hearts {hearts}
+                <div className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-bold text-coffee-900">
+                  <span className="inline-flex items-center gap-1 tabular-nums">
+                    <CoinIcon size={16} className="opacity-95" />
+                    {coins}
+                    <span className="sr-only">코인</span>
+                  </span>
+                  <span className="text-coffee-600/55">·</span>
+                  <span className="inline-flex items-center gap-1 tabular-nums">
+                    <BeanIcon size={16} className="opacity-95" />
+                    {beans}
+                    <span className="sr-only">원두</span>
+                  </span>
+                  <span className="text-coffee-600/55">·</span>
+                  <span className="inline-flex items-center gap-1 tabular-nums">
+                    <HeartIcon size={16} className="opacity-95" />
+                    {hearts}
+                    <span className="sr-only">하트</span>
+                  </span>
                 </div>
               </div>
               <Button
@@ -149,34 +168,58 @@ export function DevDebugPanel({ className }: { className?: string }) {
 
             <div className="grid grid-cols-3 gap-2">
               <Button type="button" variant="soft" onClick={() => bump({ coins: 50 })}>
-                +50 코인
+                <span className="inline-flex items-center justify-center gap-1">
+                  <CoinIcon size={16} className="opacity-95" />
+                  +50
+                  <span className="sr-only">코인</span>
+                </span>
               </Button>
               <Button type="button" variant="soft" onClick={() => bump({ beans: 10 })}>
-                +10 원두
+                <span className="inline-flex items-center justify-center gap-1">
+                  <BeanIcon size={16} className="opacity-95" />
+                  +10
+                  <span className="sr-only">원두</span>
+                </span>
               </Button>
               <Button type="button" variant="soft" onClick={() => bump({ hearts: 1 })}>
-                +1 하트
+                <span className="inline-flex items-center justify-center gap-1">
+                  <HeartIcon size={16} className="opacity-95" />
+                  +1
+                  <span className="sr-only">하트</span>
+                </span>
               </Button>
               <Button
                 type="button"
                 variant="ghost"
                 onClick={() => bump({ coins: -50 })}
               >
-                -50 코인
+                <span className="inline-flex items-center justify-center gap-1">
+                  <CoinIcon size={16} className="opacity-95" />
+                  -50
+                  <span className="sr-only">코인</span>
+                </span>
               </Button>
               <Button
                 type="button"
                 variant="ghost"
                 onClick={() => bump({ beans: -5 })}
               >
-                -5 원두
+                <span className="inline-flex items-center justify-center gap-1">
+                  <BeanIcon size={16} className="opacity-95" />
+                  -5
+                  <span className="sr-only">원두</span>
+                </span>
               </Button>
               <Button
                 type="button"
                 variant="ghost"
                 onClick={() => bump({ hearts: -1 })}
               >
-                -1 하트
+                <span className="inline-flex items-center justify-center gap-1">
+                  <HeartIcon size={16} className="opacity-95" />
+                  -1
+                  <span className="sr-only">하트</span>
+                </span>
               </Button>
             </div>
 

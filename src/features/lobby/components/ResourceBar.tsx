@@ -3,6 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { AnimatedNumber } from "@/components/common/AnimatedNumber";
+import { BeanIcon } from "@/components/ui/BeanIcon";
+import { CoinIcon } from "@/components/ui/CoinIcon";
+import { HeartIcon } from "@/components/ui/HeartIcon";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/useAppStore";
 import { useLobbyFxStore } from "@/stores/useLobbyFxStore";
@@ -62,6 +65,12 @@ export function ResourceBar({
       >
         <CompactStat
           label="코인"
+          icon={
+            <>
+              <CoinIcon size={18} className="opacity-95" />
+              <span className="sr-only">코인</span>
+            </>
+          }
           value={coins}
           delta={rewardPulse?.coins ?? 0}
           deltaKey={rewardPulse?.key}
@@ -69,13 +78,22 @@ export function ResourceBar({
         />
         <CompactStat
           label="원두"
+          icon={
+            <>
+              <BeanIcon size={18} className="opacity-95" />
+              <span className="sr-only">원두</span>
+            </>
+          }
           value={beans}
           delta={rewardPulse?.beans ?? 0}
           deltaKey={rewardPulse?.key}
           reduceMotion={reduceMotion}
         />
         <div className="relative flex min-w-0 flex-1 flex-col justify-center rounded-xl bg-cream-200/60 px-2 py-1.5 text-center ring-1 ring-coffee-600/5">
-          <div className="text-[10px] font-semibold text-coffee-600/70">하트</div>
+          <div className="flex items-center justify-center text-coffee-600/70">
+            <HeartIcon size={18} className="opacity-95" />
+            <span className="sr-only">하트</span>
+          </div>
           <div className="text-sm font-bold tabular-nums leading-tight text-coffee-900">
             <AnimatedNumber value={hearts} />
           </div>
@@ -103,7 +121,10 @@ export function ResourceBar({
       )}
     >
       <div className="relative rounded-2xl bg-cream-200/70 px-3 py-3 text-center ring-1 ring-coffee-600/5">
-        <div className="text-[11px] font-semibold text-coffee-600/70">코인</div>
+        <div className="flex items-center justify-center text-coffee-600/70">
+          <CoinIcon size={20} className="opacity-95" />
+          <span className="sr-only">코인</span>
+        </div>
         <div className="mt-1 text-lg font-bold tabular-nums text-coffee-900">
           <AnimatedNumber value={coins} />
         </div>
@@ -116,7 +137,10 @@ export function ResourceBar({
         />
       </div>
       <div className="relative rounded-2xl bg-cream-200/70 px-3 py-3 text-center ring-1 ring-coffee-600/5">
-        <div className="text-[11px] font-semibold text-coffee-600/70">원두</div>
+        <div className="flex items-center justify-center text-coffee-600/70">
+          <BeanIcon size={20} className="opacity-95" />
+          <span className="sr-only">원두</span>
+        </div>
         <div className="mt-1 text-lg font-bold tabular-nums text-coffee-900">
           <AnimatedNumber value={beans} />
         </div>
@@ -129,7 +153,10 @@ export function ResourceBar({
         />
       </div>
       <div className="relative rounded-2xl bg-cream-200/70 px-3 py-3 text-center ring-1 ring-coffee-600/5">
-        <div className="text-[11px] font-semibold text-coffee-600/70">하트</div>
+        <div className="flex items-center justify-center text-coffee-600/70">
+          <HeartIcon size={20} className="opacity-95" />
+          <span className="sr-only">하트</span>
+        </div>
         <div className="mt-1 text-lg font-bold tabular-nums text-coffee-900">
           <AnimatedNumber value={hearts} />
         </div>
@@ -150,12 +177,14 @@ export function ResourceBar({
 
 function CompactStat({
   label,
+  icon,
   value,
   delta,
   deltaKey,
   reduceMotion,
 }: {
   label: string;
+  icon?: React.ReactNode;
   value: number;
   delta: number;
   deltaKey?: number;
@@ -163,7 +192,9 @@ function CompactStat({
 }) {
   return (
     <div className="relative flex min-w-0 flex-1 flex-col justify-center rounded-xl bg-cream-200/60 px-2 py-1.5 text-center ring-1 ring-coffee-600/5">
-      <div className="text-[10px] font-semibold text-coffee-600/70">{label}</div>
+      <div className="flex items-center justify-center text-[10px] font-semibold text-coffee-600/70">
+        {icon ?? label}
+      </div>
       <div className="text-sm font-bold tabular-nums text-coffee-900">
         <AnimatedNumber value={value} />
       </div>

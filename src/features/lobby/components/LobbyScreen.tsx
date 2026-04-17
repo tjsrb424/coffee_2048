@@ -2,20 +2,24 @@
 
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Suspense, useCallback, useMemo, useState } from "react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/Button";
+import { CoinIcon } from "@/components/ui/CoinIcon";
+import { HeartIcon } from "@/components/ui/HeartIcon";
 import { getCafeRuntimeModifiers } from "@/features/meta/balance/cafeModifiers";
 import { CAFE_ECONOMY, MENU_ORDER } from "@/features/meta/balance/cafeEconomy";
 import { useResetDocumentScrollOnMount } from "@/hooks/useResetDocumentScrollOnMount";
 import type { LobbySheetId } from "@/features/lobby/config/lobbyHotspots";
 import {
-  LOBBY_SHEET_BODY_INTRO_ID,
   LOBBY_SHEET_DESCRIPTION_ID,
   LOBBY_SHEET_TAGLINE_ID,
   LOBBY_SHEET_TITLE_ID,
 } from "@/features/lobby/config/lobbySheetCopy";
 import { buildLobbySheetSummary } from "@/features/lobby/lib/lobbySheetSummary";
+import { publicAssetPath } from "@/lib/publicAssetPath";
+import { runSceneTransition } from "@/lib/runSceneTransition";
 import { t } from "@/locale/i18n";
 import { Card } from "@/components/ui/Card";
 import { useAppStore } from "@/stores/useAppStore";
@@ -23,10 +27,11 @@ import {
   CafeLoopSection,
   type CafeLoopSectionKey,
 } from "./CafeLoopSection";
-import { LastRunCard } from "./LastRunCard";
 import { LobbyBottomSheet } from "./LobbyBottomSheet";
-import { CafeSellPulseCard } from "./CafeSellPulseCard";
-import { LobbyMainCard } from "./LobbyMainCard";
+import { RoasterSheetTopOverlap } from "./RoasterSheetTopOverlap";
+import { WorkbenchSheetTopOverlap } from "./WorkbenchSheetTopOverlap";
+import { CounterSheetTopOverlap } from "./CounterSheetTopOverlap";
+import { CounterSellPulseToast } from "./CounterSellPulseToast";
 import { OfflineSalesCard } from "./OfflineSalesCard";
 import {
   LobbyTodayGuestLine,
@@ -49,11 +54,13 @@ export function LobbyScreen() {
   const playerResources = useAppStore((s) => s.playerResources);
   const puzzleProgress = useAppStore((s) => s.puzzleProgress);
   const cafeState = useAppStore((s) => s.cafeState);
+  const consumeHeart = useAppStore((s) => s.consumePuzzleHeart);
+  const router = useRouter();
 
   const [open, setOpen] = useState<OpenSheet>(null);
 
   const openCafeFromQuery = useCallback(() => {
-    setOpen({ sheet: "showcase", cafeSections: ["craft", "display"] });
+    setOpen({ sheet: "showcase", cafeSections: ["craft"] });
   }, []);
 
   const openSheet = useCallback(
@@ -129,15 +136,15 @@ export function LobbyScreen() {
             </Link>
           </nav>
           <div className="pointer-events-none flex w-full justify-center px-0.5">
-            <div className="w-full max-w-[min(100%,432px)] sm:max-w-[min(100%,468px)]">
+            <div className="w-full max-w-[432px] sm:max-w-[468px]">
               <Image
-                src="/images/brand/cafe-2048-title-2.png"
+                src={publicAssetPath("/images/brand/cafe-2048-title-2.png")}
                 alt="Cafe 2048"
                 width={1115}
                 height={584}
                 priority
                 sizes="(max-width: 640px) 432px, 468px"
-                className="mx-auto h-auto w-full max-h-[6.6rem] object-contain object-center drop-shadow-[0_1px_2px_rgba(62,47,35,0.12)] sm:max-h-[7.85rem]"
+                className="mx-auto h-auto w-full max-h-[6.6rem] object-contain object-center drop-shadow-[0_1px_2px_rgb(62_47_35_/_0.12)] sm:max-h-[7.85rem]"
               />
             </div>
           </div>
@@ -175,9 +182,15 @@ export function LobbyScreen() {
           craftHint={craftableHint}
           lastOfflineCoins={cafeState.lastOfflineSaleCoins}
           onOpenRoast={() => openSheet("roast", ["roast"])}
-          onOpenShowcase={() => openSheet("showcase", ["craft", "display"])}
+          onOpenShowcase={() => openSheet("showcase", ["craft"])}
           onOpenCounter={() => openSheet("counter")}
-          onOpenPuzzle={() => openSheet("puzzle")}
+          onOpenPuzzle={() => {
+            if (!consumeHeart()) return;
+            window.dispatchEvent(
+              new CustomEvent("coffee:request-bgm-fadeout", { detail: { ms: 1200 } }),
+            );
+            runSceneTransition(() => router.push("/puzzle"), "/puzzle");
+          }}
         />
       </AppShell>
 
@@ -185,51 +198,66 @@ export function LobbyScreen() {
         open={open !== null}
         title={title}
         tagline={tagline}
-        summary={summary}
+        floatingNotice={
+          open?.sheet === "counter" ? <CounterSellPulseToast /> : undefined
+        }
+        floatingNoticeClassName={
+          open?.sheet === "counter"
+            ? "-translate-y-[calc(100%+8.5rem)] sm:-translate-y-[calc(100%+9.5rem)]"
+            : undefined
+        }
+        summary={
+          open?.sheet === "roast" ||
+          open?.sheet === "showcase" ||
+          open?.sheet === "counter"
+            ? undefined
+            : summary
+        }
         description={description}
         onClose={closeSheet}
+        topOverlap={
+          open?.sheet === "roast" ? (
+            <RoasterSheetTopOverlap />
+          ) : open?.sheet === "counter" ? (
+            <CounterSheetTopOverlap />
+          ) : open?.sheet === "showcase" ? (
+            <WorkbenchSheetTopOverlap />
+          ) : undefined
+        }
+        headerAlign={
+          open?.sheet === "roast" ||
+          open?.sheet === "showcase" ||
+          open?.sheet === "counter"
+            ? "center"
+            : "default"
+        }
+        titleSize={
+          open?.sheet === "roast" ||
+          open?.sheet === "showcase" ||
+          open?.sheet === "counter"
+            ? "xl"
+            : "default"
+        }
+        topOverlapHeaderPaddingClassName={
+          open?.sheet === "roast"
+            ? "pt-[9.25rem] sm:pt-[10.5rem]"
+            : open?.sheet === "counter"
+              ? "pt-[7rem] sm:pt-32"
+            : open?.sheet === "showcase"
+              ? /* 일러스트 불투명 부분과 겹치지 않도록: 투명 영역(상단 띠)에만 겹치게 패딩 확보 */
+                "pt-[7rem] sm:pt-32"
+              : undefined
+        }
       >
         {open?.sheet === "roast" && (
-          <>
-            <p className="mb-4 text-sm leading-relaxed text-coffee-800">
-              {t(LOBBY_SHEET_BODY_INTRO_ID.roast)}
-            </p>
-            <CafeLoopSection sections={open.cafeSections ?? ["roast"]} />
-          </>
+          <CafeLoopSection sections={open.cafeSections ?? ["roast"]} />
         )}
         {open?.sheet === "showcase" && (
-          <>
-            <p className="mb-4 text-sm leading-relaxed text-coffee-800">
-              {t(LOBBY_SHEET_BODY_INTRO_ID.showcase)}
-            </p>
-            <CafeLoopSection
-              sections={open.cafeSections ?? ["craft", "display"]}
-            />
-          </>
+          <CafeLoopSection sections={open.cafeSections ?? ["craft"]} />
         )}
         {open?.sheet === "counter" && (
           <>
-            <p className="mb-4 text-sm leading-relaxed text-coffee-800">
-              {t(LOBBY_SHEET_BODY_INTRO_ID.counter)}
-            </p>
             <CounterSheetTodayGuestHint />
-            {menuTotalStock > 0 && !cafeState.displaySellingActive ? (
-              <div className="mb-4 rounded-2xl border border-coffee-600/10 bg-cream-200/40 px-3.5 py-2.5 ring-1 ring-coffee-600/6">
-                <p className="text-xs leading-relaxed text-coffee-800">
-                  {t("lobby.counter.waitSell.body")}
-                </p>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  className="mt-2 h-9 w-full text-xs font-semibold text-coffee-900"
-                  onClick={() =>
-                    setOpen({ sheet: "showcase", cafeSections: ["craft", "display"] })
-                  }
-                >
-                  {t("lobby.counter.waitSell.cta")}
-                </Button>
-              </div>
-            ) : null}
             {menuTotalStock === 0 ? (
               <Card className="mb-4 border border-accent-soft/25 bg-cream-50/95 p-4 ring-1 ring-coffee-600/8">
                 <div className="text-xs font-semibold uppercase tracking-wide text-coffee-600/60">
@@ -247,19 +275,10 @@ export function LobbyScreen() {
                 </Link>
               </Card>
             ) : null}
+            <CafeLoopSection sections={["display"]} />
             <div className="space-y-4">
-              <CafeSellPulseCard />
               <OfflineSalesCard />
-              <LastRunCard />
             </div>
-          </>
-        )}
-        {open?.sheet === "puzzle" && (
-          <>
-            <p className="mb-4 text-sm leading-relaxed text-coffee-800">
-              {t(LOBBY_SHEET_BODY_INTRO_ID.puzzle)}
-            </p>
-            <LobbyMainCard onBeforeNavigateToPuzzle={closeSheet} />
           </>
         )}
         {open && open.sheet !== "puzzle" ? (
@@ -315,11 +334,6 @@ function LobbyOpsDashboard({
         ? t("lobby.ops.showcaseStatus.selling", { count: menuTotalStock })
         : t("lobby.ops.showcaseStatus.idle", { count: menuTotalStock })
       : t("lobby.ops.showcaseStatus.empty", { hint: craftHint });
-  const offline =
-    lastOfflineCoins > 0
-      ? t("lobby.ops.offline.withCoins", { coins: lastOfflineCoins })
-      : t("lobby.ops.offline.none");
-
   const cardLabelClass =
     "text-[11px] font-semibold uppercase tracking-[0.06em] text-coffee-600/60";
   const cardStatusClass =
@@ -334,8 +348,16 @@ function LobbyOpsDashboard({
           <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between sm:gap-8">
             <div className="min-w-0 flex-1 space-y-3">
               <div className={cardLabelClass}>{t("lobby.card.label.puzzle")}</div>
-              <p className="text-[15px] font-semibold leading-snug text-coffee-900">
-                {t("lobby.card.puzzle.stats", { hearts, bestTile })}
+              <p className="inline-flex flex-wrap items-center gap-2 text-[15px] font-semibold leading-snug text-coffee-900">
+                <span className="inline-flex items-center gap-1">
+                  <HeartIcon size={18} className="opacity-95" />
+                  <span className="tabular-nums">{hearts}</span>
+                  <span className="sr-only">하트</span>
+                </span>
+                <span className="text-coffee-600/45" aria-hidden>
+                  ·
+                </span>
+                <span>{t("lobby.card.puzzle.statsBestTile", { bestTile })}</span>
               </p>
               <p className="text-xs leading-[1.55] text-coffee-700/80">
                 {t("lobby.card.puzzle.desc")}
@@ -413,7 +435,18 @@ function LobbyOpsDashboard({
               </>
             )}
           </p>
-          <p className={cardDescClass}>{offline}</p>
+          <p className={cardDescClass}>
+            {lastOfflineCoins > 0 ? (
+              <span className="inline-flex flex-wrap items-center gap-1">
+                {t("lobby.ops.offline.withCoinsLead")}
+                <CoinIcon size={16} className="opacity-95" />
+                <span className="tabular-nums font-semibold">{lastOfflineCoins}</span>
+                <span className="sr-only">코인</span>
+              </span>
+            ) : (
+              t("lobby.ops.offline.none")
+            )}
+          </p>
           <div className="mt-auto pt-5">
             <Button
               type="button"

@@ -134,10 +134,16 @@ export function CounterSheetTodayGuestHint() {
       ) : null}
       {showRegularGiftFeed && lastRegularGiftPing ? (
         <p className="mt-2 rounded-xl bg-cream-50/70 px-2 py-1 text-[10px] leading-snug text-coffee-800/90 ring-1 ring-coffee-600/8">
-          {t("hints.counter.regularGift", {
-            name: lastRegularGiftPing.giverName,
-            note: lastRegularGiftPing.note,
-          })}
+          {lastRegularGiftPing.tipCoins > 0
+            ? t("hints.counter.regularGiftWithTip", {
+                name: lastRegularGiftPing.giverName,
+                note: lastRegularGiftPing.note,
+                coins: lastRegularGiftPing.tipCoins,
+              })
+            : t("hints.counter.regularGift", {
+                name: lastRegularGiftPing.giverName,
+                note: lastRegularGiftPing.note,
+              })}
         </p>
       ) : null}
       {profile?.introTextId ? (

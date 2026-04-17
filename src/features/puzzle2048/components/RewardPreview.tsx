@@ -1,6 +1,9 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { BeanIcon } from "@/components/ui/BeanIcon";
+import { CoinIcon } from "@/components/ui/CoinIcon";
+import { HeartIcon } from "@/components/ui/HeartIcon";
 import { computePuzzleRewards } from "@/features/meta/rewards/computePuzzleRewards";
 import { getHighestTileValue } from "@/features/puzzle2048/engine";
 import { usePuzzleSessionStore } from "@/features/puzzle2048/store/usePuzzleSessionStore";
@@ -17,9 +20,18 @@ export function RewardPreview() {
         예상 보상
       </div>
       <div className="mt-0.5 flex flex-wrap gap-x-2 gap-y-0.5 font-semibold tabular-nums sm:mt-1 sm:gap-x-4 sm:gap-y-1">
-        <span>코인 +{preview.coins}</span>
-        <span>원두 +{preview.beans}</span>
-        <span>하트 +{preview.hearts}</span>
+        <span className="inline-flex items-center gap-1">
+          <CoinIcon size={16} className="opacity-95" />
+          <span className="sr-only">코인</span>+{preview.coins}
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <BeanIcon size={16} className="opacity-95" />
+          <span className="sr-only">원두</span>+{preview.beans}
+        </span>
+        <span className="inline-flex items-center gap-1">
+          <HeartIcon size={16} className="opacity-95" />
+          <span className="sr-only">하트</span>+{preview.hearts}
+        </span>
       </div>
       <div className="mt-1 hidden min-h-[2.5rem] sm:mt-2 sm:block">
         <motion.p

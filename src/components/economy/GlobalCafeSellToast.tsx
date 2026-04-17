@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
+import { CoinIcon } from "@/components/ui/CoinIcon";
 import { useCafeAutoSell } from "@/features/lobby/hooks/useCafeAutoSell";
 import type { DrinkMenuId } from "@/features/meta/types/gameState";
 import { t } from "@/locale/i18n";
@@ -116,12 +117,16 @@ export function GlobalCafeSellToast() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -6 }}
           transition={{ type: "spring", stiffness: 420, damping: 28 }}
-          className="pointer-events-none fixed left-1/2 top-[max(1rem,env(safe-area-inset-top))] z-[60] flex max-w-[min(20rem,calc(100vw-2rem))] -translate-x-1/2 flex-col items-center gap-1.5 px-2"
+          style={{
+            top: "max(1rem, env(safe-area-inset-top))",
+            maxWidth: "min(20rem, calc(100vw - 2rem))",
+          }}
+          className="pointer-events-none fixed left-1/2 z-[60] flex -translate-x-1/2 flex-col items-center gap-1.5 px-2"
         >
-          <span className="rounded-full bg-coffee-700/95 px-3 py-1.5 text-xs font-semibold text-cream-50 shadow-card ring-1 ring-black/10">
-            {coinToast.kind === "offline" ? t("toast.offline.prefix") : ""}+
-            {coinToast.amount}
-            {t("toast.coins.suffix")}
+          <span className="inline-flex items-center gap-1 rounded-full bg-coffee-700/95 px-3 py-1.5 text-xs font-semibold text-cream-50 shadow-card ring-1 ring-black/10">
+            <CoinIcon size={18} className="opacity-95" />
+            {coinToast.kind === "offline" ? t("toast.offline.prefix") : ""}+{coinToast.amount}
+            <span className="sr-only">{t("toast.coins.suffix")}</span>
           </span>
           {coinToast.affection ? (
             <span className="flex max-w-full flex-col items-center gap-0.5 rounded-2xl bg-cream-50/96 px-2.5 py-1 text-center text-[10px] font-medium leading-snug text-coffee-800 shadow-card ring-1 ring-coffee-600/10">

@@ -28,7 +28,7 @@ export function GlobalBgm() {
   const soundOn = useAppStore((s) => s.settings.soundOn);
   const reducedMotion = useAppStore((s) => s.settings.reducedMotion);
 
-  const track = useMemo(() => pickBgmTrack(pathname), [pathname]);
+  const track = useMemo(() => pickBgmTrack(pathname ?? "/"), [pathname]);
   const targetVolume = reducedMotion ? 0.22 : 0.28;
 
   const audioRef = useRef<HTMLAudioElement | null>(null);
