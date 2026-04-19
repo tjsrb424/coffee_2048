@@ -36,6 +36,7 @@ export function SessionResultModal({
   onDismiss,
 }: Props) {
   const goalMet = payload ? isSessionGoalMet(payload.highestTile) : false;
+  const showHeartReward = !!payload && payload.rewards.hearts > 0;
 
   return (
     <AnimatePresence>
@@ -96,34 +97,40 @@ export function SessionResultModal({
               <div className="text-xs font-semibold text-coffee-600/70">
                 로비에 들어오면 적용
               </div>
-              <div className="mt-2 grid grid-cols-3 gap-2 text-center">
-                <div className="rounded-2xl bg-cream-50/70 px-2 py-2.5 ring-1 ring-coffee-600/10">
+              <div
+                className={`mt-2 grid gap-2 text-center ${
+                  showHeartReward ? "grid-cols-3" : "grid-cols-2"
+                }`}
+              >
+                <div className="rounded-2xl bg-cream-50/70 px-2 py-3 ring-1 ring-coffee-600/10">
                   <div className="flex h-6 items-center justify-center">
-                    <CoinIcon size={18} className="h-[18px] w-[18px] opacity-95" />
+                    <CoinIcon size={24} className="h-6 w-6 opacity-95" />
                     <span className="sr-only">코인</span>
                   </div>
-                  <div className="mt-1 text-[0.95rem] font-bold leading-none tabular-nums text-accent-soft">
+                  <div className="mt-1.5 text-lg font-bold leading-none tabular-nums text-accent-soft">
                     +{payload.rewards.coins}
                   </div>
                 </div>
-                <div className="rounded-2xl bg-cream-50/70 px-2 py-2.5 ring-1 ring-coffee-600/10">
+                <div className="rounded-2xl bg-cream-50/70 px-2 py-3 ring-1 ring-coffee-600/10">
                   <div className="flex h-6 items-center justify-center">
-                    <BeanIcon size={16} className="h-4 w-4 opacity-95" />
+                    <BeanIcon size={24} className="h-6 w-6 opacity-95" />
                     <span className="sr-only">원두</span>
                   </div>
-                  <div className="mt-1 text-[0.95rem] font-bold leading-none tabular-nums text-accent-mint">
+                  <div className="mt-1.5 text-lg font-bold leading-none tabular-nums text-accent-mint">
                     +{payload.rewards.beans}
                   </div>
                 </div>
-                <div className="rounded-2xl bg-cream-50/70 px-2 py-2.5 ring-1 ring-coffee-600/10">
-                  <div className="flex h-6 items-center justify-center">
-                    <HeartIcon size={18} className="h-[18px] w-[18px] opacity-95" />
-                    <span className="sr-only">하트</span>
+                {showHeartReward ? (
+                  <div className="rounded-2xl bg-cream-50/70 px-2 py-3 ring-1 ring-coffee-600/10">
+                    <div className="flex h-6 items-center justify-center">
+                      <HeartIcon size={24} className="h-6 w-6 opacity-95" />
+                      <span className="sr-only">하트</span>
+                    </div>
+                    <div className="mt-1.5 text-lg font-bold leading-none tabular-nums text-coffee-900">
+                      +{payload.rewards.hearts}
+                    </div>
                   </div>
-                  <div className="mt-1 text-[0.95rem] font-bold leading-none tabular-nums text-coffee-900">
-                    +{payload.rewards.hearts}
-                  </div>
-                </div>
+                ) : null}
               </div>
             </div>
 

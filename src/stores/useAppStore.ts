@@ -127,6 +127,8 @@ export type AppStore = AppPersistState & {
   };
   /** 진열 재고가 있을 때 판매 세션 시작(이후에만 판매 틱 적용) */
   startDisplaySelling: () => boolean;
+  /** 진행 중인 진열 판매를 수동 중지 */
+  stopDisplaySelling: () => boolean;
   recordOfflineSaleSummary: (input: {
     atMs: number;
     gainedCoins: number;
@@ -417,6 +419,18 @@ export const useAppStore = create<AppStore>()(
             ...cafe,
             displaySellingActive: true,
             lastAutoSellAtMs: Date.now(),
+          },
+        });
+        return true;
+      },
+      stopDisplaySelling: () => {
+        const prev = get();
+        const cafe = prev.cafeState;
+        if (!cafe.displaySellingActive) return false;
+        set({
+          cafeState: {
+            ...cafe,
+            displaySellingActive: false,
           },
         });
         return true;

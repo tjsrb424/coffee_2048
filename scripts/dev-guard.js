@@ -17,6 +17,7 @@ const path = require("path");
 
 const ROOT = process.cwd();
 const NEXT_DIR = path.join(ROOT, ".next");
+const FORWARDED_ARGS = process.argv.slice(2);
 
 const MAX_RESTARTS = 2;
 const RESTART_WINDOW_MS = 5 * 60 * 1000;
@@ -79,10 +80,11 @@ function canRestartNow() {
 
 function spawnDev() {
   const isWin = process.platform === "win32";
+  const baseArgs = ["next", "dev", "-H", "0.0.0.0", ...FORWARDED_ARGS];
   const cmd = isWin ? "cmd.exe" : "npx";
   const args = isWin
-    ? ["/d", "/s", "/c", "npx next dev -H 0.0.0.0"]
-    : ["next", "dev", "-H", "0.0.0.0"];
+    ? ["/d", "/s", "/c", ["npx", ...baseArgs].join(" ")]
+    : baseArgs;
   child = spawn(cmd, args, {
     cwd: ROOT,
     env: process.env,

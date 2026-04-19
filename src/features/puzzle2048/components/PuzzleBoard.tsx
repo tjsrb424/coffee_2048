@@ -1,6 +1,5 @@
 "use client";
 
-import { AnimatePresence } from "framer-motion";
 import { useLayoutEffect, useRef, useState } from "react";
 import { usePuzzleSessionStore } from "@/features/puzzle2048/store/usePuzzleSessionStore";
 import { boardToTiles } from "@/features/puzzle2048/utils/boardToTiles";
@@ -16,6 +15,7 @@ export function PuzzleBoard() {
   const tiles = boardToTiles(board);
   const slotRef = useRef<HTMLDivElement>(null);
   const [side, setSide] = useState(300);
+  const tileSize = Math.max(0, (side - PAD_PX * 2 - GAP_PX * 3) / 4);
 
   useLayoutEffect(() => {
     const el = slotRef.current;
@@ -45,7 +45,9 @@ export function PuzzleBoard() {
   }, []);
 
   return (
-    <PuzzleBoardMetricsContext.Provider value={{ side }}>
+    <PuzzleBoardMetricsContext.Provider
+      value={{ side, tileSize, gap: GAP_PX, pad: PAD_PX }}
+    >
       <div
         ref={slotRef}
         className="relative flex h-full min-h-0 w-full min-w-0 items-center justify-center"
@@ -75,19 +77,12 @@ export function PuzzleBoard() {
                 ))}
               </div>
               <div
-                className="pointer-events-none absolute inset-0 grid grid-cols-4"
-                style={{
-                  gap: GAP_PX,
-                  padding: PAD_PX,
-                  gridTemplateRows: "repeat(4, minmax(0, 1fr))",
-                  gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
-                }}
+                className="pointer-events-none absolute inset-0"
+                aria-live="off"
               >
-                <AnimatePresence initial={false}>
-                  {tiles.map((t) => (
-                    <PuzzleTile key={t.id} tile={t} />
-                  ))}
-                </AnimatePresence>
+                {tiles.map((t) => (
+                  <PuzzleTile key={t.id} tile={t} />
+                ))}
               </div>
             </div>
           </div>

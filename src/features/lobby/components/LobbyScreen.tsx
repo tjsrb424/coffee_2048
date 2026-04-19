@@ -3,13 +3,17 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Suspense, useCallback, useMemo, useState } from "react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import {
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/Button";
-import { CoinIcon } from "@/components/ui/CoinIcon";
-import { HeartIcon } from "@/components/ui/HeartIcon";
-import { getCafeRuntimeModifiers } from "@/features/meta/balance/cafeModifiers";
-import { CAFE_ECONOMY, MENU_ORDER } from "@/features/meta/balance/cafeEconomy";
 import { useResetDocumentScrollOnMount } from "@/hooks/useResetDocumentScrollOnMount";
 import type { LobbySheetId } from "@/features/lobby/config/lobbyHotspots";
 import {
@@ -20,6 +24,8 @@ import {
 import { buildLobbySheetSummary } from "@/features/lobby/lib/lobbySheetSummary";
 import { publicAssetPath } from "@/lib/publicAssetPath";
 import { runSceneTransition } from "@/lib/runSceneTransition";
+import { playCounterOpen, playRoasterOpen, playWorkbenchOpen } from "@/lib/sfx";
+import { cn } from "@/lib/utils";
 import { t } from "@/locale/i18n";
 import { Card } from "@/components/ui/Card";
 import { useAppStore } from "@/stores/useAppStore";
@@ -33,10 +39,7 @@ import { WorkbenchSheetTopOverlap } from "./WorkbenchSheetTopOverlap";
 import { CounterSheetTopOverlap } from "./CounterSheetTopOverlap";
 import { CounterSellPulseToast } from "./CounterSellPulseToast";
 import { OfflineSalesCard } from "./OfflineSalesCard";
-import {
-  LobbyTodayGuestLine,
-  CounterSheetTodayGuestHint,
-} from "@/features/customers/components/CustomerPresenceHints";
+import { CounterSheetTodayGuestHint } from "@/features/customers/components/CustomerPresenceHints";
 import { ResourceBar } from "./ResourceBar";
 import { LobbyPanelQuerySync } from "./LobbyPanelQuerySync";
 
@@ -47,6 +50,7 @@ type OpenSheet = {
 
 export function LobbyScreen() {
   useResetDocumentScrollOnMount();
+  const reduceMotion = !!useReducedMotion();
   const lobbyOnboardingSeen = useAppStore(
     (s) => s.settings?.lobbyOnboardingSeen ?? false,
   );
@@ -55,9 +59,11 @@ export function LobbyScreen() {
   const puzzleProgress = useAppStore((s) => s.puzzleProgress);
   const cafeState = useAppStore((s) => s.cafeState);
   const consumeHeart = useAppStore((s) => s.consumePuzzleHeart);
+  const soundOn = useAppStore((s) => s.settings.soundOn);
   const router = useRouter();
 
   const [open, setOpen] = useState<OpenSheet>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const openCafeFromQuery = useCallback(() => {
     setOpen({ sheet: "showcase", cafeSections: ["craft"] });
@@ -70,6 +76,7 @@ export function LobbyScreen() {
   );
 
   const closeSheet = useCallback(() => setOpen(null), []);
+  const closeMenu = useCallback(() => setMenuOpen(false), []);
 
   const title = open ? t(LOBBY_SHEET_TITLE_ID[open.sheet]) : "";
   const tagline = open ? t(LOBBY_SHEET_TAGLINE_ID[open.sheet]) : undefined;
@@ -96,45 +103,21 @@ export function LobbyScreen() {
     [cafeState.menuStock],
   );
 
-  const craftableHint = useMemo(() => {
-    const beans = playerResources.beans;
-    const shots = cafeState.espressoShots;
-    for (const id of MENU_ORDER) {
-      const r = CAFE_ECONOMY.recipe[id];
-      if (shots >= r.shots && beans >= r.beans) return t("lobby.ops.craftHint.craftable");
-    }
-    return shots < 1
-      ? t("lobby.ops.craftHint.baseShort")
-      : t("lobby.ops.craftHint.resourceShort");
-  }, [cafeState.espressoShots, playerResources.beans]);
-
   return (
     <>
       <Suspense fallback={null}>
         <LobbyPanelQuerySync onCafePanelFromQuery={openCafeFromQuery} />
       </Suspense>
-      <AppShell className="pt-4 sm:pt-5">
-        <header className="mb-3 flex flex-col gap-2.5">
-          <nav className="flex w-full shrink-0 justify-end gap-2 text-[11px] font-semibold text-coffee-700">
-            <Link
-              href="/settings"
-              className="rounded-full bg-cream-200/80 px-2.5 py-1.5 ring-1 ring-coffee-600/10 hover:bg-cream-200"
-            >
-              {t("nav.settings")}
-            </Link>
-            <Link
-              href="/shop"
-              className="rounded-full bg-cream-200/80 px-2.5 py-1.5 ring-1 ring-coffee-600/10 hover:bg-cream-200"
-            >
-              {t("nav.shop")}
-            </Link>
-            <Link
-              href="/menu"
-              className="rounded-full bg-cream-200/80 px-2.5 py-1.5 ring-1 ring-coffee-600/10 hover:bg-cream-200"
-            >
-              {t("nav.menu")}
-            </Link>
-          </nav>
+      <AppShell className="pt-1.5 sm:pt-2.5">
+        <header className="relative mb-1.5 flex flex-col gap-0.5">
+          <div className="absolute right-0 top-0 z-20">
+            <LobbyTopMenu
+              open={menuOpen}
+              onToggle={() => setMenuOpen((v) => !v)}
+              onClose={closeMenu}
+              reduceMotion={reduceMotion}
+            />
+          </div>
           <div className="pointer-events-none flex w-full justify-center px-0.5">
             <div className="w-full max-w-[432px] sm:max-w-[468px]">
               <Image
@@ -144,7 +127,7 @@ export function LobbyScreen() {
                 height={584}
                 priority
                 sizes="(max-width: 640px) 432px, 468px"
-                className="mx-auto h-auto w-full max-h-[6.6rem] object-contain object-center drop-shadow-[0_1px_2px_rgb(62_47_35_/_0.12)] sm:max-h-[7.85rem]"
+                className="mx-auto h-auto w-full max-h-[6.3rem] object-contain object-center drop-shadow-[0_1px_2px_rgb(62_47_35_/_0.12)] sm:max-h-[7.4rem]"
               />
             </div>
           </div>
@@ -152,7 +135,7 @@ export function LobbyScreen() {
         </header>
 
         {!lobbyOnboardingSeen ? (
-          <div className="mb-2 flex items-start gap-2 rounded-2xl bg-cream-200/50 px-3 py-2.5 ring-1 ring-accent-soft/25">
+          <div className="mb-2 flex items-start gap-2 rounded-2xl bg-cream-200/50 px-3 py-2 ring-1 ring-accent-soft/25">
             <p className="min-w-0 flex-1 text-xs leading-relaxed text-coffee-800">
               {t("lobby.onboarding.hint")}
             </p>
@@ -167,23 +150,21 @@ export function LobbyScreen() {
           </div>
         ) : null}
 
-        <LobbyTodayGuestLine />
-
-        <ResourceBar variant="compact" className="mb-3" />
+        <ResourceBar variant="compact" className="mb-2" />
 
         <LobbyOpsDashboard
-          beans={playerResources.beans}
-          hearts={playerResources.hearts}
-          bestTile={puzzleProgress.bestTile}
-          shots={cafeState.espressoShots}
-          menuTotalStock={menuTotalStock}
-          displaySellingActive={cafeState.displaySellingActive}
-          autoSellIntervalMs={getCafeRuntimeModifiers(cafeState).autoSellIntervalMs}
-          craftHint={craftableHint}
-          lastOfflineCoins={cafeState.lastOfflineSaleCoins}
-          onOpenRoast={() => openSheet("roast", ["roast"])}
-          onOpenShowcase={() => openSheet("showcase", ["craft"])}
-          onOpenCounter={() => openSheet("counter")}
+          onOpenRoast={() => {
+            if (soundOn) playRoasterOpen();
+            openSheet("roast", ["roast"]);
+          }}
+          onOpenShowcase={() => {
+            if (soundOn) playWorkbenchOpen();
+            openSheet("showcase", ["craft"]);
+          }}
+          onOpenCounter={() => {
+            if (soundOn) playCounterOpen();
+            openSheet("counter");
+          }}
           onOpenPuzzle={() => {
             if (!consumeHeart()) return;
             window.dispatchEvent(
@@ -281,7 +262,7 @@ export function LobbyScreen() {
             </div>
           </>
         )}
-        {open && open.sheet !== "puzzle" ? (
+        {open && open.sheet !== "puzzle" && open.sheet !== "roast" ? (
           <p className="mt-4 text-center text-xs text-coffee-600/70">
             <Link
               href="/cafe"
@@ -298,204 +279,331 @@ export function LobbyScreen() {
   );
 }
 
+function LobbyTopMenu({
+  open,
+  onToggle,
+  onClose,
+  reduceMotion,
+}: {
+  open: boolean;
+  onToggle: () => void;
+  onClose: () => void;
+  reduceMotion: boolean;
+}) {
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (event: PointerEvent) => {
+      if (!wrapRef.current?.contains(event.target as Node)) {
+        onClose();
+      }
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") onClose();
+    };
+    window.addEventListener("pointerdown", onPointerDown);
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("pointerdown", onPointerDown);
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open, onClose]);
+
+  return (
+    <div ref={wrapRef} className="relative z-20 flex justify-end">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-label="메뉴 열기"
+        aria-expanded={open}
+        className="flex h-11 w-11 items-center justify-center rounded-full bg-cream-50/90 text-coffee-800 shadow-card ring-1 ring-coffee-600/10 backdrop-blur-sm transition-colors hover:bg-cream-50"
+      >
+        <div className="flex w-[18px] flex-col gap-[3px]">
+          <span
+            className={cn(
+              "h-[2px] rounded-full bg-current transition-transform duration-200",
+              open && "translate-y-[5px] rotate-45",
+            )}
+          />
+          <span
+            className={cn(
+              "h-[2px] rounded-full bg-current transition-opacity duration-200",
+              open && "opacity-0",
+            )}
+          />
+          <span
+            className={cn(
+              "h-[2px] rounded-full bg-current transition-transform duration-200",
+              open && "-translate-y-[5px] -rotate-45",
+            )}
+          />
+        </div>
+      </button>
+
+      <AnimatePresence>
+        {open ? (
+          <motion.div
+            initial={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -12, scale: 0.96 }}
+            animate={reduceMotion ? { opacity: 1 } : { opacity: 1, y: 0, scale: 1 }}
+            exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -8, scale: 0.98 }}
+            transition={
+              reduceMotion
+                ? { duration: 0.16 }
+                : { duration: 0.28, ease: [0.22, 1, 0.36, 1] }
+            }
+            className="absolute right-0 top-[calc(100%+0.55rem)] min-w-[9rem] overflow-hidden rounded-[1.5rem] bg-cream-50/96 p-2 shadow-[0_18px_40px_rgb(42_27_18_/_0.14)] ring-1 ring-coffee-600/10 backdrop-blur-md"
+          >
+            <motion.div
+              initial="closed"
+              animate="open"
+              variants={{
+                open: {
+                  transition: {
+                    staggerChildren: reduceMotion ? 0 : 0.04,
+                    delayChildren: reduceMotion ? 0 : 0.02,
+                  },
+                },
+                closed: {},
+              }}
+              className="flex flex-col"
+            >
+              {[
+                { href: "/settings", label: t("nav.settings") },
+                { href: "/shop", label: t("nav.shop") },
+                { href: "/menu", label: t("nav.menu") },
+              ].map((item) => (
+                <motion.div
+                  key={item.href}
+                  variants={{
+                    closed: { opacity: 0, y: -4 },
+                    open: { opacity: 1, y: 0 },
+                  }}
+                >
+                  <Link
+                    href={item.href}
+                    onClick={onClose}
+                    className="flex min-h-[2.8rem] items-center rounded-[1rem] px-3.5 text-sm font-semibold text-coffee-800 transition-colors hover:bg-cream-200/70"
+                  >
+                    {item.label}
+                  </Link>
+                </motion.div>
+              ))}
+            </motion.div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+    </div>
+  );
+}
+
 function LobbyOpsDashboard({
-  beans,
-  hearts,
-  bestTile,
-  shots,
-  menuTotalStock,
-  displaySellingActive,
-  autoSellIntervalMs,
-  craftHint,
-  lastOfflineCoins,
   onOpenRoast,
   onOpenShowcase,
   onOpenCounter,
   onOpenPuzzle,
 }: {
-  beans: number;
-  hearts: number;
-  bestTile: number;
-  shots: number;
-  menuTotalStock: number;
-  displaySellingActive: boolean;
-  autoSellIntervalMs: number;
-  craftHint: string;
-  lastOfflineCoins: number;
   onOpenRoast: () => void;
   onOpenShowcase: () => void;
   onOpenCounter: () => void;
   onOpenPuzzle: () => void;
 }) {
-  const sellSec = (autoSellIntervalMs / 1000).toFixed(1);
-  const showcaseStatus =
-    menuTotalStock > 0
-      ? displaySellingActive
-        ? t("lobby.ops.showcaseStatus.selling", { count: menuTotalStock })
-        : t("lobby.ops.showcaseStatus.idle", { count: menuTotalStock })
-      : t("lobby.ops.showcaseStatus.empty", { hint: craftHint });
-  const cardLabelClass =
-    "text-[11px] font-semibold uppercase tracking-[0.06em] text-coffee-600/60";
-  const cardStatusClass =
-    "mt-3 text-[15px] font-semibold leading-snug tracking-tight text-coffee-900";
-  const cardDescClass =
-    "mt-2.5 text-xs leading-[1.55] text-coffee-700/80 [word-break:keep-all]";
+  const tileConfigs: Array<{
+    key: "roast" | "showcase" | "counter" | "empty";
+    title?: string;
+    onClick?: () => void;
+    topImageSrc?: string;
+    topImageViewportClassName?: string;
+    topImageClassName?: string;
+    topImageWrapperClassName?: string;
+  }> = [
+    {
+      key: "roast",
+      title: t("lobby.sheet.roast.title"),
+      onClick: onOpenRoast,
+      topImageSrc: publicAssetPath("/images/ui/lobby-roaster-tile.png"),
+      topImageViewportClassName:
+        "h-[6.75rem] w-[6.75rem] overflow-visible sm:h-[7.15rem] sm:w-[7.15rem]",
+      topImageClassName: "h-full w-full object-contain",
+      topImageWrapperClassName: "top-[0.15rem] sm:top-[0.2rem]",
+    },
+    {
+      key: "showcase",
+      title: t("lobby.sheet.showcase.title"),
+      onClick: onOpenShowcase,
+      topImageSrc: publicAssetPath("/images/ui/lobby-workbench-tile.png"),
+      topImageViewportClassName:
+        "h-[5.25rem] w-[8.75rem] sm:h-[5.55rem] sm:w-[9.2rem]",
+      topImageClassName: "h-full w-full object-contain",
+      topImageWrapperClassName: "top-[0.8rem] sm:top-[0.9rem]",
+    },
+    {
+      key: "counter",
+      title: t("lobby.tile.counter.title"),
+      onClick: onOpenCounter,
+      topImageSrc: publicAssetPath("/images/ui/lobby-counter-tile.png"),
+      topImageViewportClassName:
+        "h-[5.95rem] w-[8.7rem] sm:h-[6.25rem] sm:w-[9.1rem]",
+      topImageClassName: "h-full w-full object-contain",
+      topImageWrapperClassName: "top-[0.55rem] sm:top-[0.65rem]",
+    },
+    {
+      key: "empty",
+    },
+  ];
 
   return (
     <section className="mb-2">
-      <div className="grid grid-cols-2 items-stretch gap-4 sm:gap-5">
-        <Card className="col-span-2 flex flex-col p-6 sm:p-7">
-          <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between sm:gap-8">
-            <div className="min-w-0 flex-1 space-y-3">
-              <div className={cardLabelClass}>{t("lobby.card.label.puzzle")}</div>
-              <p className="inline-flex flex-wrap items-center gap-2 text-[15px] font-semibold leading-snug text-coffee-900">
-                <span className="inline-flex items-center gap-1">
-                  <HeartIcon size={18} className="opacity-95" />
-                  <span className="tabular-nums">{hearts}</span>
-                  <span className="sr-only">하트</span>
-                </span>
-                <span className="text-coffee-600/45" aria-hidden>
-                  ·
-                </span>
-                <span>{t("lobby.card.puzzle.statsBestTile", { bestTile })}</span>
-              </p>
-              <p className="text-xs leading-[1.55] text-coffee-700/80">
-                {t("lobby.card.puzzle.desc")}
-              </p>
-            </div>
-            <Button
-              type="button"
-              variant="soft"
-              className="h-12 w-full shrink-0 sm:h-11 sm:w-[8rem]"
-              onClick={onOpenPuzzle}
-            >
-              {t("lobby.card.puzzle.cta")}
-            </Button>
+      <Card className="flex flex-col p-3.5 sm:p-4">
+        <div className="flex flex-col items-center gap-2.5 text-center">
+          <div className="text-[1.4rem] font-semibold leading-none tracking-[-0.03em] text-coffee-900">
+            2048
           </div>
-        </Card>
+          <p className="text-sm leading-relaxed text-coffee-700/80">
+            {t("lobby.card.puzzle.desc")}
+          </p>
+          <Button
+            type="button"
+            variant="soft"
+            className="h-9 min-h-0 w-full max-w-[9.5rem] shrink-0 text-sm sm:w-[8.5rem]"
+            onClick={onOpenPuzzle}
+          >
+            PLAY
+          </Button>
+        </div>
+      </Card>
 
-        <Card className="flex min-h-[192px] flex-col p-6 sm:p-5 md:p-6">
-          <div className={cardLabelClass}>{t("lobby.card.label.roast")}</div>
-          <p className={cardStatusClass}>
-            {t("lobby.card.roast.status", { beans, shots })}
-          </p>
-          <p className={cardDescClass}>{t("lobby.card.roast.desc")}</p>
-          <div className="mt-auto pt-5">
-            <Button
-              type="button"
-              variant="ghost"
-              className="h-12 w-full text-xs font-semibold text-coffee-900 sm:h-11"
-              onClick={onOpenRoast}
-            >
-              {t("lobby.card.roast.cta")}
-            </Button>
-          </div>
-        </Card>
-
-        <Card className="flex min-h-[192px] flex-col p-6 sm:p-5 md:p-6">
-          <div className={cardLabelClass}>{t("lobby.card.label.showcase")}</div>
-          <p className={cardStatusClass}>{showcaseStatus}</p>
-          <p className={cardDescClass}>
-            {t("lobby.card.showcase.desc1")}
-            <br className="sm:hidden" />
-            {t("lobby.card.showcase.desc2")}
-          </p>
-          <div className="mt-auto pt-5">
-            <Button
-              type="button"
-              variant="soft"
-              className="h-12 w-full text-xs font-semibold sm:h-11"
-              onClick={onOpenShowcase}
-            >
-              {t("lobby.card.showcase.cta")}
-            </Button>
-          </div>
-        </Card>
-
-        <Card className="flex min-h-[192px] flex-col p-6 sm:p-5 md:p-6">
-          <div className={cardLabelClass}>{t("lobby.sheet.counter.title")}</div>
-          <p className={cardStatusClass}>
-            {menuTotalStock > 0 ? (
-              displaySellingActive ? (
-                <>
-                  {t("lobby.card.counter.sellingLive.prefix")}{" "}
-                  <span className="tabular-nums">
-                    {sellSec}
-                    {t("lobby.card.counter.selling.unit")}
-                  </span>
-                </>
-              ) : (
-                t("lobby.card.counter.waitStart")
-              )
-            ) : (
-              <>
-                {t("lobby.card.counter.emptyLine1")}
-                <br className="sm:hidden" />
-                <span className="sm:ml-1">{t("lobby.card.counter.emptyLine2")}</span>
-              </>
-            )}
-          </p>
-          <p className={cardDescClass}>
-            {lastOfflineCoins > 0 ? (
-              <span className="inline-flex flex-wrap items-center gap-1">
-                {t("lobby.ops.offline.withCoinsLead")}
-                <CoinIcon size={16} className="opacity-95" />
-                <span className="tabular-nums font-semibold">{lastOfflineCoins}</span>
-                <span className="sr-only">코인</span>
-              </span>
-            ) : (
-              t("lobby.ops.offline.none")
-            )}
-          </p>
-          <div className="mt-auto pt-5">
-            <Button
-              type="button"
-              variant="ghost"
-              className="h-12 w-full text-xs font-semibold text-coffee-900 sm:h-11"
-              onClick={onOpenCounter}
-            >
-              {t("lobby.card.counter.cta")}
-            </Button>
-          </div>
-        </Card>
-
-        <Card className="flex min-h-[192px] flex-col p-6 sm:p-5 md:p-6">
-          <div className={cardLabelClass}>{t("lobby.card.label.today")}</div>
-          <p className={cardStatusClass}>
-            {menuTotalStock > 0
-              ? displaySellingActive
-                ? t("lobby.card.today.selling")
-                : t("lobby.card.today.idle")
-              : t("lobby.card.today.empty")}
-          </p>
-          <p className={`${cardDescClass} flex-1`}>
-            {menuTotalStock > 0 ? (
-              displaySellingActive ? (
-                <>
-                  {t("lobby.card.today.sellingDesc1", { sec: sellSec })}
-                  <br className="sm:hidden" />
-                  {t("lobby.card.today.sellingDesc2")}
-                </>
-              ) : (
-                <>
-                  {t("lobby.card.today.idleDesc1")}
-                  <br className="sm:hidden" />
-                  {t("lobby.card.today.idleDesc2")}
-                </>
-              )
-            ) : (
-              <>
-                {t("lobby.card.today.emptyDesc1")}
-                <br className="sm:hidden" />
-                {t("lobby.card.today.emptyDesc2")}
-              </>
-            )}
-          </p>
-          <div className="mt-auto pt-5" aria-hidden>
-            <div className="h-12 sm:h-11" />
-          </div>
-        </Card>
+      <div
+        data-testid="lobby-reference-tile-grid"
+        className="mt-5 sm:mt-6"
+      >
+        <div className="-mx-3 grid grid-cols-2 gap-x-0.5 gap-y-2 sm:mx-0 sm:mx-auto sm:max-w-[26.5rem] sm:gap-x-1.5 sm:gap-y-2.5">
+          {tileConfigs.map((tile) => (
+            <LobbyWhitePanelTile
+              key={tile.key}
+              dataTestId={`lobby-reference-tile-${tile.key}`}
+              title={tile.title}
+              onClick={tile.onClick}
+              topImageSrc={tile.topImageSrc}
+              topImageViewportClassName={tile.topImageViewportClassName}
+              topImageClassName={tile.topImageClassName}
+              topImageWrapperClassName={tile.topImageWrapperClassName}
+            />
+          ))}
+        </div>
       </div>
     </section>
+  );
+}
+
+function LobbyWhitePanelTile({
+  dataTestId,
+  title,
+  onClick,
+  className,
+  topImageSrc,
+  topImageViewportClassName,
+  topImageClassName,
+  topImageWrapperClassName,
+}: {
+  dataTestId?: string;
+  title?: string;
+  onClick?: () => void;
+  className?: string;
+  topImageSrc?: string;
+  topImageViewportClassName?: string;
+  topImageClassName?: string;
+  topImageWrapperClassName?: string;
+}) {
+  const content = (
+    <>
+      <div className="absolute inset-0">
+        <Image
+          src={publicAssetPath("/images/ui/lobby-white-panel-figma.png")}
+          alt=""
+          fill
+          sizes="(max-width: 640px) 54vw, 320px"
+          className="object-contain object-center"
+          priority={false}
+        />
+      </div>
+      <div className="relative z-10 flex h-full items-end justify-center px-4 pb-[1.78rem] sm:px-5 sm:pb-[1.88rem]">
+        {title ? (
+          <div className="w-full text-center text-[13px] font-bold leading-none tracking-[-0.03em] text-[#241811] sm:text-[14px]">
+            {title}
+          </div>
+        ) : null}
+      </div>
+    </>
+  );
+
+  if (onClick) {
+    return (
+      <div className={cn("relative w-full pt-[1.65rem] sm:pt-[1.8rem]", className)}>
+        {topImageSrc ? (
+          <div
+            className={cn(
+              "pointer-events-none absolute left-1/2 top-0 z-10 -translate-x-1/2",
+              topImageWrapperClassName,
+            )}
+          >
+            <div className={cn("relative", topImageViewportClassName)}>
+              <Image
+                src={topImageSrc}
+                alt=""
+                width={320}
+                height={320}
+                className={cn(
+                  "max-w-none drop-shadow-[0_10px_18px_rgb(90_61_43_/_0.18)]",
+                  topImageClassName,
+                )}
+                priority={false}
+              />
+            </div>
+          </div>
+        ) : null}
+        <button
+          data-testid={dataTestId}
+          type="button"
+          onClick={onClick}
+          className="relative block aspect-[3/2] w-full overflow-hidden rounded-[2rem] text-left transition-transform duration-150 ease-out active:scale-[0.985]"
+        >
+          {content}
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className={cn("relative w-full pt-[1.65rem] sm:pt-[1.8rem]", className)}>
+      {topImageSrc ? (
+        <div
+          className={cn(
+            "pointer-events-none absolute left-1/2 top-0 z-10 -translate-x-1/2",
+            topImageWrapperClassName,
+          )}
+        >
+          <div className={cn("relative", topImageViewportClassName)}>
+            <Image
+              src={topImageSrc}
+              alt=""
+              width={320}
+              height={320}
+              className={cn(
+                "max-w-none drop-shadow-[0_10px_18px_rgb(90_61_43_/_0.18)]",
+                topImageClassName,
+              )}
+              priority={false}
+            />
+          </div>
+        </div>
+      ) : null}
+      <div
+        data-testid={dataTestId}
+        className="relative aspect-[3/2] w-full overflow-hidden rounded-[2rem]"
+      >
+        {content}
+      </div>
+    </div>
   );
 }

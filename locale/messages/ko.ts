@@ -71,6 +71,7 @@ export const koMessages = {
   "lobby.card.showcase.desc1": "만들 수 있는 메뉴부터 눌러",
   "lobby.card.showcase.desc2": "진열을 채운 뒤 판매를 개시해요.",
   "lobby.card.showcase.cta": "메뉴 제작",
+  "lobby.tile.counter.title": "계산대",
 
   "lobby.card.label.counter": "카운터",
   "lobby.card.counter.sellingLive.prefix": "판매 중 · 약",
@@ -139,6 +140,7 @@ export const koMessages = {
   "cafe.loop.display.tickWhenIdle": "",
   "cafe.loop.display.tickWhenSelling": "",
   "cafe.loop.display.startCta": "판매 개시",
+  "cafe.loop.display.stopCta": "판매 중지",
   "cafe.loop.display.startHint": "",
   "cafe.loop.display.sellingBadge": "지금은 판매 세션이 켜져 있어요.",
   "cafe.loop.display.emptyTitle.craft": "진열이 비어 있어요",

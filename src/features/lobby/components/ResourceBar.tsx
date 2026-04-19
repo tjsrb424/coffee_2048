@@ -59,7 +59,7 @@ export function ResourceBar({
       <motion.div
         layout={!reduceMotion}
         className={cn(
-          "mb-3 flex items-stretch gap-1.5 rounded-2xl bg-cream-50/85 px-2 py-2.5 shadow-card ring-1 ring-coffee-600/8",
+          "mb-3 flex items-stretch gap-1.5 rounded-2xl bg-cream-50/88 px-2 py-1.5 shadow-card",
           className,
         )}
       >
@@ -67,7 +67,7 @@ export function ResourceBar({
           label="코인"
           icon={
             <>
-              <CoinIcon size={18} className="opacity-95" />
+              <CoinIcon size={22} className="opacity-95" />
               <span className="sr-only">코인</span>
             </>
           }
@@ -80,7 +80,7 @@ export function ResourceBar({
           label="원두"
           icon={
             <>
-              <BeanIcon size={18} className="opacity-95" />
+              <BeanIcon size={20} className="opacity-95" />
               <span className="sr-only">원두</span>
             </>
           }
@@ -89,25 +89,19 @@ export function ResourceBar({
           deltaKey={rewardPulse?.key}
           reduceMotion={reduceMotion}
         />
-        <div className="relative flex min-w-0 flex-1 flex-col justify-center rounded-xl bg-cream-200/60 px-2 py-1.5 text-center ring-1 ring-coffee-600/5">
-          <div className="flex items-center justify-center text-coffee-600/70">
-            <HeartIcon size={18} className="opacity-95" />
-            <span className="sr-only">하트</span>
-          </div>
-          <div className="text-sm font-bold tabular-nums leading-tight text-coffee-900">
-            <AnimatedNumber value={hearts} />
-          </div>
-          <RewardDelta
-            show={!!rewardPulse && (rewardPulse?.hearts ?? 0) > 0}
-            text={`+${rewardPulse?.hearts ?? 0}`}
-            accent="soft"
-            reduceMotion={reduceMotion}
-            deltaKey={rewardPulse?.key}
-          />
-          <div className="truncate text-[9px] font-medium text-coffee-600/65">
-            {heartHint}
-          </div>
-        </div>
+        <CompactStat
+          label="하트"
+          icon={
+            <>
+              <HeartIcon size={20} className="opacity-95" />
+              <span className="sr-only">하트</span>
+            </>
+          }
+          value={hearts}
+          delta={rewardPulse?.hearts ?? 0}
+          deltaKey={rewardPulse?.key}
+          reduceMotion={reduceMotion}
+        />
       </motion.div>
     );
   }
@@ -191,12 +185,12 @@ function CompactStat({
   reduceMotion: boolean;
 }) {
   return (
-    <div className="relative flex min-w-0 flex-1 flex-col justify-center rounded-xl bg-cream-200/60 px-2 py-1.5 text-center ring-1 ring-coffee-600/5">
-      <div className="flex items-center justify-center text-[10px] font-semibold text-coffee-600/70">
+    <div className="relative flex min-w-0 flex-1 items-center justify-center gap-2.5 rounded-xl bg-cream-200/60 px-2 py-2 ring-1 ring-coffee-600/5">
+      <div className="flex h-7 w-7 shrink-0 items-center justify-center text-[10px] font-semibold text-coffee-600/70">
         {icon ?? label}
       </div>
-      <div className="text-sm font-bold tabular-nums text-coffee-900">
-        <AnimatedNumber value={value} />
+      <div className="min-w-0 text-center text-[15px] font-bold tabular-nums leading-none text-coffee-900">
+        x<AnimatedNumber value={value} />
       </div>
       <RewardDelta
         show={delta > 0}

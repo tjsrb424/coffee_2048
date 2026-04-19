@@ -1,11 +1,13 @@
 "use client";
 
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { BeanIcon } from "@/components/ui/BeanIcon";
 import { CoinIcon } from "@/components/ui/CoinIcon";
+import { EspressoShotIcon } from "@/components/ui/EspressoShotIcon";
 import { DRINK_MENU_TEXT_IDS } from "@/data/drinkMenuTextIds";
 import { getCafeRuntimeModifiers } from "@/features/meta/balance/cafeModifiers";
 import {
@@ -18,6 +20,7 @@ import { t } from "@/locale/i18n";
 import { useAppStore } from "@/stores/useAppStore";
 import { useGameFeedback } from "@/hooks/useGameFeedback";
 import { publicAssetPath } from "@/lib/publicAssetPath";
+import { playDisplayStartClick } from "@/lib/sfx";
 import { cn } from "@/lib/utils";
 
 export type CafeLoopSectionKey = "roast" | "craft" | "display";
@@ -37,7 +40,15 @@ export function CafeLoopSection({
   const roastOnce = useAppStore((s) => s.roastOnce);
   const craftDrink = useAppStore((s) => s.craftDrink);
   const startDisplaySelling = useAppStore((s) => s.startDisplaySelling);
+  const stopDisplaySelling = useAppStore((s) => s.stopDisplaySelling);
+  const soundOn = useAppStore((s) => s.settings.soundOn);
   const { lightTap } = useGameFeedback();
+  const [roastDelta, setRoastDelta] = useState<{
+    key: number;
+    beans: number;
+    shots: number;
+  } | null>(null);
+  const roastDeltaTimerRef = useRef<number | null>(null);
 
   const m = getCafeRuntimeModifiers(cafe);
   const canRoast = beans >= m.roastBeanCost && shots < m.maxShots;
@@ -56,6 +67,29 @@ export function CafeLoopSection({
 
   const show = (k: CafeLoopSectionKey) => sections.includes(k);
 
+  useEffect(() => {
+    return () => {
+      if (roastDeltaTimerRef.current !== null) {
+        window.clearTimeout(roastDeltaTimerRef.current);
+      }
+    };
+  }, []);
+
+  const showRoastDelta = (input: { beans: number; shots: number }) => {
+    if (roastDeltaTimerRef.current !== null) {
+      window.clearTimeout(roastDeltaTimerRef.current);
+    }
+    const key = Date.now();
+    setRoastDelta({ key, ...input });
+    roastDeltaTimerRef.current = window.setTimeout(
+      () => {
+        setRoastDelta((current) => (current?.key === key ? null : current));
+        roastDeltaTimerRef.current = null;
+      },
+      reduceMotion ? 750 : 1250,
+    );
+  };
+
   const scrollToCraft = () => {
     const el = document.getElementById("lobby-cafe-craft");
     el?.scrollIntoView({
@@ -68,23 +102,35 @@ export function CafeLoopSection({
     <div className="space-y-4">
       {show("roast") && (
       <Card className="p-4">
-        <div className="flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="inline-flex items-center gap-1.5 rounded-2xl bg-cream-200/60 px-2.5 py-1.5 text-xs font-semibold tabular-nums text-coffee-900 ring-1 ring-coffee-600/5">
+        <div className="flex flex-col items-center gap-2">
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <div className="relative inline-flex items-center gap-1.5 overflow-visible rounded-2xl bg-cream-200/60 px-2.5 py-1.5 text-xs font-semibold tabular-nums text-coffee-900 ring-1 ring-coffee-600/5">
+              <RoastResourceDelta
+                deltaKey={roastDelta?.key}
+                reduceMotion={reduceMotion}
+                tone="spend"
+                value={roastDelta?.beans ?? 0}
+              />
               <BeanIcon size={16} className="opacity-95" />
               <span>{beans}</span>
               <span className="sr-only">원두</span>
             </div>
-            <div className="inline-flex items-center gap-1.5 rounded-2xl bg-cream-200/60 px-2.5 py-1.5 text-xs font-semibold tabular-nums text-coffee-900 ring-1 ring-coffee-600/5">
-              <span className="grid h-4 w-4 place-items-center rounded-full bg-coffee-900/6 text-[10px] font-bold text-coffee-800 ring-1 ring-coffee-600/10">
-                샷
-              </span>
+            <div className="relative inline-flex items-center gap-1.5 overflow-visible rounded-2xl bg-cream-200/60 px-2.5 py-1.5 text-xs font-semibold tabular-nums text-coffee-900 ring-1 ring-coffee-600/5">
+              <RoastResourceDelta
+                deltaKey={roastDelta?.key}
+                reduceMotion={reduceMotion}
+                tone="gain"
+                value={roastDelta?.shots ?? 0}
+              />
+              <EspressoShotIcon size={18} className="opacity-95" />
               <span>{shots}</span>
               <span className="sr-only">샷</span>
             </div>
           </div>
-          <div className="text-[11px] font-semibold text-coffee-600/70">
-            최대 <span className="tabular-nums">{m.maxShots}</span>샷
+          <div className="inline-flex items-center justify-center gap-1 text-center text-[11px] font-semibold text-coffee-600/70">
+            최대
+            <EspressoShotIcon size={14} className="opacity-75" />
+            <span className="tabular-nums">{m.maxShots}</span>
           </div>
         </div>
 
@@ -92,27 +138,33 @@ export function CafeLoopSection({
           <Button
             type="button"
             variant="soft"
-            className="h-auto min-h-[3rem] w-full max-w-[18rem] flex-col gap-1 py-2.5"
+            className="h-auto min-h-[3rem] w-full max-w-[18rem] flex-col items-center justify-center gap-1 py-2.5 text-center"
             disabled={!canRoast}
             onClick={() => {
               lightTap();
-              roastOnce();
+              const didRoast = roastOnce();
+              if (didRoast) {
+                showRoastDelta({
+                  beans: -m.roastBeanCost,
+                  shots: m.shotYield,
+                });
+              }
             }}
           >
             <span className="text-[15px] font-semibold leading-tight">
               {t("cafe.loop.roast.ctaLine1")}
             </span>
-            <span className="text-[11px] font-semibold leading-snug text-coffee-700/90">
-              {t("cafe.loop.roast.ctaLine2", {
-                cost: m.roastBeanCost,
-                yield: m.shotYield,
-              })}
+            <span className="inline-flex items-center justify-center gap-1.5 text-[11px] font-semibold leading-snug text-coffee-700/90">
+              <BeanIcon size={14} className="opacity-95" />
+              <span className="tabular-nums">
+                {beans}/{m.roastBeanCost}
+              </span>
             </span>
           </Button>
         </div>
         <p
           className={cn(
-            "mt-2 text-xs leading-relaxed",
+            "mt-2 text-center text-xs leading-relaxed",
             canRoast ? "text-coffee-600/55" : "text-coffee-700/85",
           )}
         >
@@ -136,9 +188,10 @@ export function CafeLoopSection({
           <span className="text-[11px] font-semibold text-coffee-600/75">
             {t("cafe.loop.craft.resources")}
           </span>
-          <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs font-semibold tabular-nums text-coffee-900">
-            <span>
-              {t("cafe.loop.craft.shots")}{" "}
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-semibold tabular-nums text-coffee-900">
+            <span className="inline-flex items-center gap-1">
+              <EspressoShotIcon size={16} className="opacity-95" />
+              <span className="sr-only">{t("cafe.loop.craft.shots")}</span>
               <span className="text-coffee-800">{shots}</span>
             </span>
             <span>
@@ -211,10 +264,26 @@ export function CafeLoopSection({
               className="h-11 w-full text-xs font-semibold sm:h-10"
               onClick={() => {
                 lightTap();
+                if (soundOn) playDisplayStartClick();
                 startDisplaySelling();
               }}
             >
               {t("cafe.loop.display.startCta")}
+            </Button>
+          </div>
+        ) : null}
+        {displaySellingActive && totalStock > 0 ? (
+          <div className="mt-3">
+            <Button
+              type="button"
+              variant="ghost"
+              className="h-11 w-full text-xs font-semibold sm:h-10"
+              onClick={() => {
+                lightTap();
+                stopDisplaySelling();
+              }}
+            >
+              {t("cafe.loop.display.stopCta")}
             </Button>
           </div>
         ) : null}
@@ -293,6 +362,63 @@ function drinkImagePath(id: DrinkMenuId): string {
     default:
       return publicAssetPath("/images/drink/아메리카노.png");
   }
+}
+
+function RoastResourceDelta({
+  deltaKey,
+  reduceMotion,
+  tone,
+  value,
+}: {
+  deltaKey?: number;
+  reduceMotion: boolean;
+  tone: "gain" | "spend";
+  value: number;
+}) {
+  const show = value !== 0 && deltaKey !== undefined;
+  const text = value > 0 ? `+${value}` : `${value}`;
+
+  return (
+    <AnimatePresence mode="popLayout">
+      {show ? (
+        <motion.span
+          key={`${deltaKey}-${tone}-${value}`}
+          initial={
+            reduceMotion
+              ? { opacity: 0 }
+              : { opacity: 0, y: 7, scale: 0.88 }
+          }
+          animate={
+            reduceMotion
+              ? { opacity: 1 }
+              : { opacity: 1, y: -18, scale: 1 }
+          }
+          exit={
+            reduceMotion
+              ? { opacity: 0 }
+              : { opacity: 0, y: -30, scale: 0.96 }
+          }
+          transition={
+            reduceMotion
+              ? { duration: 0.18 }
+              : {
+                  duration: 0.9,
+                  ease: [0.22, 1, 0.36, 1],
+                }
+          }
+          className={cn(
+            "pointer-events-none absolute left-1/2 top-0 z-20 -translate-x-1/2 whitespace-nowrap rounded-full px-2 py-0.5 text-[12px] font-extrabold tabular-nums shadow-[0_8px_18px_rgb(55_34_20_/_0.16)] ring-1",
+            tone === "gain"
+              ? "bg-accent-mint/35 text-coffee-950 ring-accent-mint/50"
+              : "bg-[#f2dfc7]/95 text-coffee-900 ring-accent-soft/45",
+          )}
+          aria-hidden
+        >
+          {text}
+        </motion.span>
+      ) : null}
+    </AnimatePresence>
+  );
 }
 
 function menuEmoji(id: DrinkMenuId): string {
@@ -413,7 +539,13 @@ function MenuCraftCard({
                   : "bg-[#f6ede3] text-coffee-900 ring-accent-soft/22",
               )}
             >
-              {t("cafe.loop.craft.shots")} {shots}/{rec.shots}
+              <span className="inline-flex items-center gap-1">
+                <EspressoShotIcon size={15} className="opacity-95" />
+                <span className="sr-only">{t("cafe.loop.craft.shots")}</span>
+                <span>
+                  {shots}/{rec.shots}
+                </span>
+              </span>
             </span>
             {needsBeans ? (
               <span

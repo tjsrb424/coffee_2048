@@ -13,25 +13,32 @@ export function RewardPreview() {
   const score = usePuzzleSessionStore((s) => s.score);
   const highest = getHighestTileValue(board);
   const preview = computePuzzleRewards(score, highest);
+  const showHeart = preview.hearts > 0;
 
   return (
-    <div className="shrink-0 rounded-xl bg-cream-200/70 px-2 py-1.5 text-xs text-coffee-800 ring-1 ring-coffee-600/10 sm:min-h-[6.75rem] sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm">
-      <div className="text-[10px] font-semibold uppercase tracking-wide text-coffee-600/70 sm:text-xs">
+    <div className="shrink-0 rounded-xl bg-cream-200/70 px-2.5 py-2 text-xs text-coffee-800 ring-1 ring-coffee-600/10 sm:min-h-[6.75rem] sm:rounded-2xl sm:px-4 sm:py-3 sm:text-sm">
+      <div className="text-center text-[10px] font-semibold uppercase tracking-wide text-coffee-600/70 sm:text-xs">
         예상 보상
       </div>
-      <div className="mt-0.5 flex flex-wrap gap-x-2 gap-y-0.5 font-semibold tabular-nums sm:mt-1 sm:gap-x-4 sm:gap-y-1">
-        <span className="inline-flex items-center gap-1">
-          <CoinIcon size={16} className="opacity-95" />
+      <div
+        className={`mt-1 grid gap-2 font-semibold tabular-nums ${
+          showHeart ? "grid-cols-3" : "grid-cols-2"
+        } sm:mt-2 sm:gap-3`}
+      >
+        <div className="flex min-h-12 items-center justify-center gap-1.5 rounded-xl bg-cream-50/75 px-2 py-2 text-sm font-bold ring-1 ring-coffee-600/10 sm:min-h-14 sm:rounded-2xl sm:text-lg">
+          <CoinIcon size={22} className="shrink-0 opacity-95 sm:h-7 sm:w-7" />
           <span className="sr-only">코인</span>+{preview.coins}
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <BeanIcon size={16} className="opacity-95" />
+        </div>
+        <div className="flex min-h-12 items-center justify-center gap-1.5 rounded-xl bg-cream-50/75 px-2 py-2 text-sm font-bold ring-1 ring-coffee-600/10 sm:min-h-14 sm:rounded-2xl sm:text-lg">
+          <BeanIcon size={22} className="shrink-0 opacity-95 sm:h-7 sm:w-7" />
           <span className="sr-only">원두</span>+{preview.beans}
-        </span>
-        <span className="inline-flex items-center gap-1">
-          <HeartIcon size={16} className="opacity-95" />
-          <span className="sr-only">하트</span>+{preview.hearts}
-        </span>
+        </div>
+        {showHeart ? (
+          <div className="flex min-h-12 items-center justify-center gap-1.5 rounded-xl bg-cream-50/75 px-2 py-2 text-sm font-bold ring-1 ring-coffee-600/10 sm:min-h-14 sm:rounded-2xl sm:text-lg">
+            <HeartIcon size={22} className="shrink-0 opacity-95 sm:h-7 sm:w-7" />
+            <span className="sr-only">하트</span>+{preview.hearts}
+          </div>
+        ) : null}
       </div>
       <div className="mt-1 hidden min-h-[2.5rem] sm:mt-2 sm:block">
         <motion.p

@@ -45,13 +45,13 @@ export function PuzzleHud({ bestScoreMeta }: Props) {
           </div>
         </div>
       </div>
-      <div className="w-[4.25rem] shrink-0 rounded-xl bg-cream-200/80 px-1.5 py-1.5 text-center ring-1 ring-coffee-600/10 sm:min-h-[5.25rem] sm:w-[92px] sm:rounded-2xl sm:px-3 sm:py-3">
+      <div className="w-[5.3rem] shrink-0 rounded-xl bg-cream-200/80 px-2 py-1.5 text-center ring-1 ring-coffee-600/10 sm:min-h-[5.25rem] sm:w-[7rem] sm:rounded-2xl sm:px-3 sm:py-3">
         <div className="text-[9px] font-semibold leading-tight text-coffee-600/70 sm:text-[11px]">
           최고
           <br className="sm:hidden" />
           타일
         </div>
-        <div className="mt-0.5 text-base font-bold tabular-nums leading-none text-coffee-900 sm:mt-1 sm:min-h-[2.5rem] sm:text-lg sm:leading-8">
+        <div className="mt-0.5 whitespace-nowrap text-[1.05rem] font-bold tabular-nums leading-none tracking-[-0.04em] text-coffee-900 sm:mt-1 sm:min-h-[2.5rem] sm:text-2xl sm:leading-8">
           {highest}
         </div>
       </div>

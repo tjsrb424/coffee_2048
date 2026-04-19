@@ -1,10 +1,36 @@
 import type { Metadata, Viewport } from "next";
-import { DM_Sans } from "next/font/google";
+import localFont from "next/font/local";
 import "./globals.css";
 import { Providers } from "./providers";
 
-const sans = DM_Sans({
-  subsets: ["latin"],
+const sans = localFont({
+  src: [
+    {
+      path: "../../font/TmoneyRoundWind/02_수동설치파일/02_ttf/TmoneyRoundWindRegular.ttf",
+      weight: "400",
+      style: "normal",
+    },
+    {
+      path: "../../font/TmoneyRoundWind/02_수동설치파일/02_ttf/TmoneyRoundWindRegular.ttf",
+      weight: "500",
+      style: "normal",
+    },
+    {
+      path: "../../font/TmoneyRoundWind/02_수동설치파일/02_ttf/TmoneyRoundWindExtraBold.ttf",
+      weight: "600",
+      style: "normal",
+    },
+    {
+      path: "../../font/TmoneyRoundWind/02_수동설치파일/02_ttf/TmoneyRoundWindExtraBold.ttf",
+      weight: "700",
+      style: "normal",
+    },
+    {
+      path: "../../font/TmoneyRoundWind/02_수동설치파일/02_ttf/TmoneyRoundWindExtraBold.ttf",
+      weight: "800",
+      style: "normal",
+    },
+  ],
   variable: "--font-sans",
   display: "swap",
 });

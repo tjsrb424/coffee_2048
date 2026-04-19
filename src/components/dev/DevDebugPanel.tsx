@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { BeanIcon } from "@/components/ui/BeanIcon";
 import { CoinIcon } from "@/components/ui/CoinIcon";
+import { EspressoShotIcon } from "@/components/ui/EspressoShotIcon";
 import { HeartIcon } from "@/components/ui/HeartIcon";
 import { useGameFeedback } from "@/hooks/useGameFeedback";
 import { cn } from "@/lib/utils";
@@ -228,7 +229,10 @@ export function DevDebugPanel({ className }: { className?: string }) {
                 카페 (빠른 조작)
               </div>
               <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-coffee-700">
-                <span className="font-semibold">샷</span>
+                <span className="inline-flex items-center gap-1 font-semibold">
+                  <EspressoShotIcon size={16} className="opacity-95" />
+                  <span className="sr-only">샷</span>
+                </span>
                 <span className="tabular-nums">{cafe.espressoShots}</span>
                 <Button
                   type="button"
@@ -274,4 +278,3 @@ export function DevDebugPanel({ className }: { className?: string }) {
     </div>
   );
 }
-

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { Card } from "@/components/ui/Card";
+import { EspressoShotIcon } from "@/components/ui/EspressoShotIcon";
 import { DRINK_MENU_TEXT_IDS } from "@/data/drinkMenuTextIds";
 import { MENU_ORDER } from "@/features/meta/balance/cafeEconomy";
 import { getCafeRuntimeModifiers } from "@/features/meta/balance/cafeModifiers";
@@ -60,7 +61,8 @@ export function CafeStatusCard() {
           <div className="text-[10px] font-semibold text-coffee-600/70">
             {t("cafeStatus.stat.base")}
           </div>
-          <div className="mt-0.5 text-base font-bold tabular-nums text-coffee-900">
+          <div className="mt-0.5 inline-flex items-center justify-center gap-1 text-base font-bold tabular-nums text-coffee-900">
+            <EspressoShotIcon size={17} className="opacity-95" />
             {cafe.espressoShots}
           </div>
         </div>

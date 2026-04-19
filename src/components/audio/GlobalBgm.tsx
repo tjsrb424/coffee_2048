@@ -9,6 +9,8 @@ function easeOutCubic(t: number) {
   return 1 - Math.pow(1 - t, 3);
 }
 
+const BGM_TRACKS = ["/bgm/lobby.mp3", "/bgm/puzzle-2048.mp3"] as const;
+
 function pickBgmTrack(pathname: string): string | null {
   // 주요 허브 화면에서는 같은 BGM을 유지.
   if (
@@ -19,6 +21,9 @@ function pickBgmTrack(pathname: string): string | null {
     pathname.startsWith("/settings")
   ) {
     return "/bgm/lobby.mp3";
+  }
+  if (pathname.startsWith("/puzzle")) {
+    return "/bgm/puzzle-2048.mp3";
   }
   return null;
 }
@@ -36,6 +41,36 @@ export function GlobalBgm() {
   const gainRef = useRef<GainNode | null>(null);
   const srcRef = useRef<MediaElementAudioSourceNode | null>(null);
   const gestureHandlerRef = useRef<(() => void) | null>(null);
+  const retryTimersRef = useRef<number[]>([]);
+  const preloadAudioRef = useRef<Map<string, HTMLAudioElement>>(new Map());
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !soundOn) return;
+
+    for (const bgmTrack of BGM_TRACKS) {
+      const src = publicAssetPath(bgmTrack);
+      if (!document.querySelector(`link[data-bgm-preload="${bgmTrack}"]`)) {
+        const link = document.createElement("link");
+        link.rel = "preload";
+        link.as = "audio";
+        link.href = src;
+        link.setAttribute("data-bgm-preload", bgmTrack);
+        document.head.appendChild(link);
+      }
+
+      if (!preloadAudioRef.current.has(bgmTrack)) {
+        const a = new Audio(src);
+        a.preload = "auto";
+        a.volume = 0;
+        preloadAudioRef.current.set(bgmTrack, a);
+        try {
+          a.load();
+        } catch {
+          /* noop */
+        }
+      }
+    }
+  }, [soundOn]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -85,7 +120,15 @@ export function GlobalBgm() {
       if (!handler) return;
       window.removeEventListener("pointerdown", handler);
       window.removeEventListener("touchstart", handler);
+      window.removeEventListener("keydown", handler);
       gestureHandlerRef.current = null;
+    };
+
+    const clearRetryTimers = () => {
+      for (const id of retryTimersRef.current) {
+        window.clearTimeout(id);
+      }
+      retryTimersRef.current = [];
     };
 
     const ensureAudio = () => {
@@ -151,6 +194,39 @@ export function GlobalBgm() {
       }
     };
 
+    const waitUntilPlayable = (audio: HTMLAudioElement, expectedSrc: string) =>
+      new Promise<void>((resolve) => {
+        if (audio.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
+          resolve();
+          return;
+        }
+
+        let done = false;
+        const finish = () => {
+          if (done) return;
+          done = true;
+          cleanup();
+          resolve();
+        };
+        const cleanup = () => {
+          window.clearTimeout(timeoutId);
+          audio.removeEventListener("canplay", finish);
+          audio.removeEventListener("canplaythrough", finish);
+          audio.removeEventListener("loadeddata", finish);
+          audio.removeEventListener("error", finish);
+        };
+        const timeoutId = window.setTimeout(finish, 1800);
+
+        audio.addEventListener("canplay", finish, { once: true });
+        audio.addEventListener("canplaythrough", finish, { once: true });
+        audio.addEventListener("loadeddata", finish, { once: true });
+        audio.addEventListener("error", finish, { once: true });
+
+        if (audio.src !== expectedSrc) {
+          finish();
+        }
+      });
+
     const stopWithFade = () => {
       detachGestureStart();
       const g = ensureGraph();
@@ -177,6 +253,7 @@ export function GlobalBgm() {
         gestureHandlerRef.current = onFirstGesture;
         window.addEventListener("pointerdown", onFirstGesture, { passive: true });
         window.addEventListener("touchstart", onFirstGesture, { passive: true });
+        window.addEventListener("keydown", onFirstGesture);
       };
 
       const doPlay = async () => {
@@ -185,6 +262,7 @@ export function GlobalBgm() {
           if (ctx.state === "suspended") {
             await ctx.resume();
           }
+          await waitUntilPlayable(audio, nextSrc);
           await audio.play();
         } catch {
           armGestureResume();
@@ -231,21 +309,50 @@ export function GlobalBgm() {
       }
     };
 
+    const armRetryStarts = () => {
+      clearRetryTimers();
+      for (const ms of [120, 380, 900, 1600]) {
+        const id = window.setTimeout(() => {
+          if (!soundOn || !track) return;
+          void startOrSwitch(track);
+        }, ms);
+        retryTimersRef.current.push(id);
+      }
+    };
+
     if (!soundOn || !track) {
+      clearRetryTimers();
       stopWithFade();
       return () => {
         detachGestureStart();
+        clearRetryTimers();
       };
     }
 
     void startOrSwitch(track);
+    armRetryStarts();
+
+    const onUnlockLike = () => {
+      if (!soundOn || !track) return;
+      void startOrSwitch(track);
+    };
+    window.addEventListener("pointerdown", onUnlockLike, { passive: true });
+    window.addEventListener("touchstart", onUnlockLike, { passive: true });
+    window.addEventListener("keydown", onUnlockLike);
+    window.addEventListener("focus", onUnlockLike);
+    window.addEventListener("pageshow", onUnlockLike);
 
     return () => {
       detachGestureStart();
+      clearRetryTimers();
+      window.removeEventListener("pointerdown", onUnlockLike);
+      window.removeEventListener("touchstart", onUnlockLike);
+      window.removeEventListener("keydown", onUnlockLike);
+      window.removeEventListener("focus", onUnlockLike);
+      window.removeEventListener("pageshow", onUnlockLike);
     };
   }, [soundOn, track, targetVolume]);
 
   // 전역 컴포넌트: UI 없음
   return null;
 }
-
