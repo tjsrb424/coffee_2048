@@ -194,9 +194,23 @@ export function GlobalBgm() {
       }
     };
 
+    const toAbsoluteSrc = (src: string) => {
+      try {
+        return new URL(src, window.location.href).href;
+      } catch {
+        return src;
+      }
+    };
+
+    const isSameAudioSrc = (audio: HTMLAudioElement, expectedSrc: string) =>
+      audio.src === toAbsoluteSrc(expectedSrc);
+
     const waitUntilPlayable = (audio: HTMLAudioElement, expectedSrc: string) =>
       new Promise<void>((resolve) => {
-        if (audio.readyState >= HTMLMediaElement.HAVE_FUTURE_DATA) {
+        const hasEnoughData = () =>
+          audio.readyState >= HTMLMediaElement.HAVE_ENOUGH_DATA;
+
+        if (hasEnoughData()) {
           resolve();
           return;
         }
@@ -208,21 +222,26 @@ export function GlobalBgm() {
           cleanup();
           resolve();
         };
+        const finishIfBuffered = () => {
+          if (hasEnoughData()) finish();
+        };
         const cleanup = () => {
           window.clearTimeout(timeoutId);
-          audio.removeEventListener("canplay", finish);
+          audio.removeEventListener("canplay", finishIfBuffered);
           audio.removeEventListener("canplaythrough", finish);
-          audio.removeEventListener("loadeddata", finish);
+          audio.removeEventListener("loadeddata", finishIfBuffered);
+          audio.removeEventListener("progress", finishIfBuffered);
           audio.removeEventListener("error", finish);
         };
-        const timeoutId = window.setTimeout(finish, 1800);
+        const timeoutId = window.setTimeout(finish, 2400);
 
-        audio.addEventListener("canplay", finish, { once: true });
+        audio.addEventListener("canplay", finishIfBuffered);
         audio.addEventListener("canplaythrough", finish, { once: true });
-        audio.addEventListener("loadeddata", finish, { once: true });
+        audio.addEventListener("loadeddata", finishIfBuffered);
+        audio.addEventListener("progress", finishIfBuffered);
         audio.addEventListener("error", finish, { once: true });
 
-        if (audio.src !== expectedSrc) {
+        if (!isSameAudioSrc(audio, expectedSrc)) {
           finish();
         }
       });
@@ -287,7 +306,7 @@ export function GlobalBgm() {
       };
 
       // 같은 트랙이면 볼륨만 목표치로 보정
-      if (audio.src && audio.src.endsWith(nextTrack)) {
+      if (audio.src && isSameAudioSrc(audio, nextSrc)) {
         if (!soundOn) return;
         void doPlay();
         return;

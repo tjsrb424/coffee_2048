@@ -13,7 +13,7 @@ export function BeanIcon({
 }) {
   return (
     <Image
-      src={publicAssetPath("/images/ui/bean.png")}
+      src={publicAssetPath("/images/optimized/ui/bean.webp")}
       alt=""
       width={size}
       height={size}

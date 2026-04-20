@@ -7,7 +7,7 @@ import { publicAssetPath } from "@/lib/publicAssetPath";
 export function RoasterSheetTopOverlap() {
   return (
     <Image
-      src={publicAssetPath("/images/ui/roaster-machine-2.png")}
+      src={publicAssetPath("/images/optimized/ui/roaster-machine-2.webp")}
       alt=""
       width={1120}
       height={1120}

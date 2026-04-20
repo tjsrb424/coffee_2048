@@ -11,6 +11,7 @@ let counterOpenPool: HTMLAudioElement[] | null = null;
 let counterOpenCursor = 0;
 let displayStartPool: HTMLAudioElement[] | null = null;
 let displayStartCursor = 0;
+let sfxUnlocked = false;
 
 function makeAudioPool(
   src: string,
@@ -28,7 +29,7 @@ function makeAudioPool(
 function getClickPool(): HTMLAudioElement[] | null {
   if (typeof window === "undefined") return null;
   if (!sharedClickPool) {
-    sharedClickPool = makeAudioPool(publicAssetPath("/sfx/click.mp3"), CLICK_POOL_SIZE, 0.85);
+    sharedClickPool = makeAudioPool(publicAssetPath("/sfx/click.mp3"), CLICK_POOL_SIZE, 0.76);
   }
   return sharedClickPool;
 }
@@ -36,7 +37,7 @@ function getClickPool(): HTMLAudioElement[] | null {
 function getRoasterOpenPool(): HTMLAudioElement[] | null {
   if (typeof window === "undefined") return null;
   if (!roasterOpenPool) {
-    roasterOpenPool = makeAudioPool(publicAssetPath("/sfx/roaster-open.mp3"), 4, 0.92);
+    roasterOpenPool = makeAudioPool(publicAssetPath("/sfx/roaster-open.mp3"), 4, 0.84);
   }
   return roasterOpenPool;
 }
@@ -44,7 +45,7 @@ function getRoasterOpenPool(): HTMLAudioElement[] | null {
 function getWorkbenchOpenPool(): HTMLAudioElement[] | null {
   if (typeof window === "undefined") return null;
   if (!workbenchOpenPool) {
-    workbenchOpenPool = makeAudioPool(publicAssetPath("/sfx/workbench-open.mp3"), 4, 0.92);
+    workbenchOpenPool = makeAudioPool(publicAssetPath("/sfx/workbench-open.mp3"), 4, 0.84);
   }
   return workbenchOpenPool;
 }
@@ -52,7 +53,7 @@ function getWorkbenchOpenPool(): HTMLAudioElement[] | null {
 function getCounterOpenPool(): HTMLAudioElement[] | null {
   if (typeof window === "undefined") return null;
   if (!counterOpenPool) {
-    counterOpenPool = makeAudioPool(publicAssetPath("/sfx/counter-open.mp3"), 4, 0.92);
+    counterOpenPool = makeAudioPool(publicAssetPath("/sfx/counter-open.mp3"), 4, 0.84);
   }
   return counterOpenPool;
 }
@@ -60,7 +61,7 @@ function getCounterOpenPool(): HTMLAudioElement[] | null {
 function getDisplayStartPool(): HTMLAudioElement[] | null {
   if (typeof window === "undefined") return null;
   if (!displayStartPool) {
-    displayStartPool = makeAudioPool(publicAssetPath("/sfx/display-start-click.mp3"), 4, 0.95);
+    displayStartPool = makeAudioPool(publicAssetPath("/sfx/display-start-click.mp3"), 4, 0.86);
   }
   return displayStartPool;
 }
@@ -78,6 +79,55 @@ function playFromPool(
     return { played: true, nextCursor };
   } catch {
     return { played: false, nextCursor };
+  }
+}
+
+function warmPool(pool: HTMLAudioElement[] | null): void {
+  if (!pool) return;
+  for (const audio of pool) {
+    try {
+      audio.load();
+    } catch {
+      /* noop */
+    }
+  }
+}
+
+export function warmSfx(): void {
+  warmPool(getClickPool());
+  warmPool(getRoasterOpenPool());
+  warmPool(getWorkbenchOpenPool());
+  warmPool(getCounterOpenPool());
+  warmPool(getDisplayStartPool());
+}
+
+export function unlockSfx(): void {
+  if (sfxUnlocked) return;
+  sfxUnlocked = true;
+
+  const audio = getClickPool()?.[0];
+  if (!audio) return;
+  const previousMuted = audio.muted;
+  const previousVolume = audio.volume;
+
+  try {
+    audio.muted = true;
+    audio.volume = 0;
+    const result = audio.play();
+    void result
+      .then(() => {
+        audio.pause();
+        audio.currentTime = 0;
+        audio.muted = previousMuted;
+        audio.volume = previousVolume;
+      })
+      .catch(() => {
+        audio.muted = previousMuted;
+        audio.volume = previousVolume;
+      });
+  } catch {
+    audio.muted = previousMuted;
+    audio.volume = previousVolume;
   }
 }
 

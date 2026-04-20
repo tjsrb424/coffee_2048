@@ -13,7 +13,7 @@ export function EspressoShotIcon({
 }) {
   return (
     <Image
-      src={publicAssetPath("/images/ui/espresso-shot.png")}
+      src={publicAssetPath("/images/optimized/ui/espresso-shot.webp")}
       alt=""
       width={size}
       height={size}

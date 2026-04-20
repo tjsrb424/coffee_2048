@@ -34,6 +34,7 @@ jobs:
         env:
           GITHUB_ACTIONS: "true"
           NEXT_PUBLIC_BASE_PATH: "/coffe_2048"
+          NEXT_PUBLIC_ASSET_VERSION: ${{ github.sha }}
           NEXT_PUBLIC_ENABLE_DEV_DEBUG: "true"
         run: npm run build
 

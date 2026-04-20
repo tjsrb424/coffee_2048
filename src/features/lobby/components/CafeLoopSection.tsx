@@ -354,13 +354,13 @@ export function CafeLoopSection({
 function drinkImagePath(id: DrinkMenuId): string {
   switch (id) {
     case "americano":
-      return publicAssetPath("/images/drink/아메리카노.png");
+      return publicAssetPath("/images/optimized/drink/아메리카노.webp");
     case "latte":
-      return publicAssetPath("/images/drink/카페라떼.png");
+      return publicAssetPath("/images/optimized/drink/카페라떼.webp");
     case "affogato":
-      return publicAssetPath("/images/drink/아포가토.png");
+      return publicAssetPath("/images/optimized/drink/아포가토.webp");
     default:
-      return publicAssetPath("/images/drink/아메리카노.png");
+      return publicAssetPath("/images/optimized/drink/아메리카노.webp");
   }
 }
 

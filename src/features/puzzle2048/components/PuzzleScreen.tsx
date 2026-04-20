@@ -56,6 +56,10 @@ export function PuzzleScreen() {
   useLockDocumentScroll(true);
 
   useEffect(() => {
+    router.prefetch("/lobby");
+  }, [router]);
+
+  useEffect(() => {
     if (hearts <= 0) {
       setNoHeartOpen(true);
       return;

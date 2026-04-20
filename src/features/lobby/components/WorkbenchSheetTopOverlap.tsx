@@ -7,7 +7,7 @@ import { publicAssetPath } from "@/lib/publicAssetPath";
 export function WorkbenchSheetTopOverlap() {
   return (
     <Image
-      src={publicAssetPath("/images/ui/workbench.png")}
+      src={publicAssetPath("/images/optimized/ui/workbench.webp")}
       alt=""
       width={1120}
       height={1120}

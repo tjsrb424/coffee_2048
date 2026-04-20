@@ -21,7 +21,8 @@
     "test:visual:headed": "playwright test --headed",
     "test:visual:ui": "playwright test --ui",
     "test:visual:report": "playwright show-report",
-    "assets:trim-lobby-title": "node scripts/trim-lobby-title-png.mjs"
+    "assets:trim-lobby-title": "node scripts/trim-lobby-title-png.mjs",
+    "assets:optimize-runtime": "node scripts/optimize-runtime-assets.mjs"
   },
   "dependencies": {
     "clsx": "^2.1.1",

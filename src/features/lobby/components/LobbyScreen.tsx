@@ -65,6 +65,10 @@ export function LobbyScreen() {
   const [open, setOpen] = useState<OpenSheet>(null);
   const [menuOpen, setMenuOpen] = useState(false);
 
+  useEffect(() => {
+    router.prefetch("/puzzle");
+  }, [router]);
+
   const openCafeFromQuery = useCallback(() => {
     setOpen({ sheet: "showcase", cafeSections: ["craft"] });
   }, []);
@@ -121,7 +125,7 @@ export function LobbyScreen() {
           <div className="pointer-events-none flex w-full justify-center px-0.5">
             <div className="w-full max-w-[432px] sm:max-w-[468px]">
               <Image
-                src={publicAssetPath("/images/brand/cafe-2048-title-2.png")}
+                src={publicAssetPath("/images/optimized/brand/cafe-2048-title-2.webp")}
                 alt="Cafe 2048"
                 width={1115}
                 height={584}
@@ -421,7 +425,7 @@ function LobbyOpsDashboard({
       key: "roast",
       title: t("lobby.sheet.roast.title"),
       onClick: onOpenRoast,
-      topImageSrc: publicAssetPath("/images/ui/lobby-roaster-tile.png"),
+      topImageSrc: publicAssetPath("/images/optimized/ui/lobby-roaster-tile.webp"),
       topImageViewportClassName:
         "h-[6.75rem] w-[6.75rem] overflow-visible sm:h-[7.15rem] sm:w-[7.15rem]",
       topImageClassName: "h-full w-full object-contain",
@@ -431,7 +435,7 @@ function LobbyOpsDashboard({
       key: "showcase",
       title: t("lobby.sheet.showcase.title"),
       onClick: onOpenShowcase,
-      topImageSrc: publicAssetPath("/images/ui/lobby-workbench-tile.png"),
+      topImageSrc: publicAssetPath("/images/optimized/ui/lobby-workbench-tile.webp"),
       topImageViewportClassName:
         "h-[5.25rem] w-[8.75rem] sm:h-[5.55rem] sm:w-[9.2rem]",
       topImageClassName: "h-full w-full object-contain",
@@ -441,7 +445,7 @@ function LobbyOpsDashboard({
       key: "counter",
       title: t("lobby.tile.counter.title"),
       onClick: onOpenCounter,
-      topImageSrc: publicAssetPath("/images/ui/lobby-counter-tile.png"),
+      topImageSrc: publicAssetPath("/images/optimized/ui/lobby-counter-tile.webp"),
       topImageViewportClassName:
         "h-[5.95rem] w-[8.7rem] sm:h-[6.25rem] sm:w-[9.1rem]",
       topImageClassName: "h-full w-full object-contain",
@@ -519,7 +523,7 @@ function LobbyWhitePanelTile({
     <>
       <div className="absolute inset-0">
         <Image
-          src={publicAssetPath("/images/ui/lobby-white-panel-figma.png")}
+          src={publicAssetPath("/images/optimized/ui/lobby-white-panel-figma.webp")}
           alt=""
           fill
           sizes="(max-width: 640px) 54vw, 320px"

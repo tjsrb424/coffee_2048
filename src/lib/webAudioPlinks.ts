@@ -28,7 +28,7 @@ function getMasterInput(ctx: AudioContext): GainNode {
   if (sharedMaster?.ctx === ctx) return sharedMaster.input;
 
   const input = ctx.createGain();
-  input.gain.value = 0.95;
+  input.gain.value = 0.84;
 
   // 여러 소리가 한 번에 나도 “증폭”처럼 안 들리도록
   // 가벼운 컴프레서로 피크를 눌러준다.
@@ -46,6 +46,19 @@ function getMasterInput(ctx: AudioContext): GainNode {
   return input;
 }
 
+export function warmWebAudioPlinks(): void {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  getMasterInput(ctx);
+}
+
+export function unlockWebAudioPlinks(): void {
+  const ctx = getAudioContext();
+  if (!ctx) return;
+  getMasterInput(ctx);
+  resumeIfNeeded(ctx);
+}
+
 export function playMergePlink(): void {
   const ctx = getAudioContext();
   if (!ctx) return;
@@ -58,7 +71,7 @@ export function playMergePlink(): void {
   osc.frequency.setValueAtTime(392, t0);
   osc.frequency.exponentialRampToValueAtTime(523.25, t0 + 0.06);
   gain.gain.setValueAtTime(0.0001, t0);
-  gain.gain.exponentialRampToValueAtTime(0.095, t0 + 0.02);
+  gain.gain.exponentialRampToValueAtTime(0.084, t0 + 0.02);
   gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.1);
   osc.connect(gain);
   gain.connect(master);
@@ -77,7 +90,7 @@ export function playMoveTick(): void {
   osc.type = "triangle";
   osc.frequency.setValueAtTime(180, t0);
   gain.gain.setValueAtTime(0.0001, t0);
-  gain.gain.exponentialRampToValueAtTime(0.035, t0 + 0.015);
+  gain.gain.exponentialRampToValueAtTime(0.031, t0 + 0.015);
   gain.gain.exponentialRampToValueAtTime(0.0001, t0 + 0.06);
   osc.connect(gain);
   gain.connect(master);

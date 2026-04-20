@@ -7,7 +7,7 @@ import { publicAssetPath } from "@/lib/publicAssetPath";
 export function CounterSheetTopOverlap() {
   return (
     <Image
-      src={publicAssetPath("/images/ui/counter-machine.png")}
+      src={publicAssetPath("/images/optimized/ui/counter-machine.webp")}
       alt=""
       width={1120}
       height={1120}

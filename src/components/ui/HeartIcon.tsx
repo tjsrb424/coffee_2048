@@ -13,7 +13,7 @@ export function HeartIcon({
 }) {
   return (
     <Image
-      src={publicAssetPath("/images/ui/heart.png")}
+      src={publicAssetPath("/images/optimized/ui/heart.webp")}
       alt=""
       width={size}
       height={size}

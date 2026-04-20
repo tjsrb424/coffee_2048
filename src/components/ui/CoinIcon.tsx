@@ -13,7 +13,7 @@ export function CoinIcon({
 }) {
   return (
     <Image
-      src={publicAssetPath("/images/ui/coin.png")}
+      src={publicAssetPath("/images/optimized/ui/coin.webp")}
       alt=""
       width={size}
       height={size}
