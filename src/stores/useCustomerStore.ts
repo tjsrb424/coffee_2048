@@ -310,6 +310,31 @@ function normalizeCustomerSaveState(input: unknown): CustomerSaveState {
   };
 }
 
+function normalizeImportedSaleSession(input: unknown): SaleSessionState | null {
+  if (!input || typeof input !== "object") return null;
+
+  const raw = input as Partial<SaleSessionState>;
+  if (!Array.isArray(raw.queue)) return null;
+  const known = new Set(SAMPLE_CUSTOMERS.map((customer) => customer.id));
+  const queue = raw.queue.filter((id): id is CustomerId => known.has(id));
+  if (queue.length === 0) return null;
+
+  return {
+    startedAtMs:
+      typeof raw.startedAtMs === "number" && Number.isFinite(raw.startedAtMs)
+        ? Math.max(0, Math.floor(raw.startedAtMs))
+        : 0,
+    queue,
+    currentRemainingCups:
+      typeof raw.currentRemainingCups === "number" &&
+      Number.isFinite(raw.currentRemainingCups)
+        ? Math.max(1, Math.floor(raw.currentRemainingCups))
+        : 1,
+    featuredQueued:
+      typeof raw.featuredQueued === "boolean" ? raw.featuredQueued : false,
+  };
+}
+
 function calendarDayKeyUtc(nowMs: number): number {
   return Math.floor(nowMs / 86_400_000);
 }
@@ -773,11 +798,14 @@ export const useCustomerStore = create<CustomerStore>()(
       importCustomerSave: (data) => {
         if (!data || typeof data !== "object") return false;
         const next = normalizeCustomerSaveState(data);
+        const nextSaleSession = normalizeImportedSaleSession(
+          (data as { saleSession?: unknown }).saleSession,
+        );
         set({
           ...next,
           lastCounterSalePing: null,
           lastStoryUnlockPing: null,
-          saleSession: null,
+          saleSession: nextSaleSession,
           lastRegularGiftPing: null,
           lastPreferenceHookPing: null,
           lastRegularGiftAtMs: 0,

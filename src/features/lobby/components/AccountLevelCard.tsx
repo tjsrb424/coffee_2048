@@ -112,7 +112,7 @@ export function AccountLevelCard() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -6, scale: 0.98 }}
             transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
-            className="absolute left-0 top-[calc(100%+0.55rem)] w-[min(22.5rem,calc(100vw-1.5rem))]"
+            className="absolute left-0 top-[calc(100%+0.55rem)] w-[calc(100vw-1.5rem)] max-w-[22.5rem]"
           >
             <Card
               data-tier-slot={band.backgroundSlot}

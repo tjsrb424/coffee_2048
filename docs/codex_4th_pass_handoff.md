@@ -115,6 +115,7 @@ Cursor는 코드를 수정하기 전에 아래를 먼저 확인해야 한다.
   - `CUSTOMER_STORAGE_KEY = "coffee2048_customers_v1"`
   - `CUSTOMER_STORAGE_VERSION = 6`
 - 개발자용 export/import/reset UI는 `src/components/dev/DevDebugPanel.tsx`에서 메인 저장 + 손님 저장을 묶어서 다룬다.
+- 디버그 import는 비영속 `saleSession`도 함께 주입할 수 있어, 실제 자동 판매 write path 회귀를 안정적으로 재현할 수 있다. (`saleSession` 자체는 저장 스키마에 포함되지 않음)
 
 ### 5-2. 레벨/미션/도감/상점 상태의 source of truth가 어디인가
 - 레벨/미션/표준 레시피 해금/구매:
@@ -150,7 +151,7 @@ Cursor는 코드를 수정하기 전에 아래를 먼저 확인해야 한다.
 - 자동 판매 배치와의 연결은 `src/stores/useCustomerStore.ts`의 `recordCafeSale`
 - 실제 트리거는 `src/components/economy/GlobalCafeSellToast.tsx`
 - UI 피드백은 `src/features/customers/components/CustomerPresenceHints.tsx`
-- 현재 범위는 “애정도 증가 / 스토리 조각 / 선호 태그 ping” 중심이다.
+- 현재 범위는 “애정도 증가 / 스토리 조각 / 단골 판정 / 선호 태그 ping” 중심이다.
 - 대형 보상 시스템이나 주문 시스템까지는 아직 연결되지 않았다.
 
 ---
@@ -166,6 +167,12 @@ Cursor는 코드를 수정하기 전에 아래를 먼저 확인해야 한다.
 - 손님 저장:
   - `src/stores/useCustomerStore.ts`
   - 저장 대상: `byId`, `featuredCustomerId`, 일일 quota 관련 필드
+- 비저장 런타임:
+  - `saleSession`
+  - `lastCounterSalePing`
+  - `lastStoryUnlockPing`
+  - `lastRegularGiftPing`
+  - `lastPreferenceHookPing`
 - 메인 저장 키/버전:
   - `src/features/meta/storage/storageKeys.ts`
 - 메인 저장은 정규화 중심 마이그레이션이고, 손님 저장은 버전별 보정 체인이 더 두껍다.
@@ -292,12 +299,16 @@ Cursor는 바로 구현부터 들어가지 말고 아래 순서로 시작해야 
 - [x] 일반/시간대 레시피 ownership 핵심 회귀 자동화 테스트 추가 완료
 - [x] 핵심손님 최소 연결 훅 구현 완료
 - [x] 디버그 export/import/reset에서 메인 저장 + 손님 저장 번들 처리 완료
+- [x] 레벨/미션/스킨/손님 저장 persistence 회귀 테스트 추가 완료 (`tests/visual/meta-persistence.spec.ts`)
+- [x] 실제 판매 write path 기반 손님 애정도/스토리 회귀 테스트 추가 완료 (`tests/visual/customer-sale-flow.spec.ts`)
+- [x] 실제 판매 write path 기반 단골 판정(`isRegular`) 회귀 테스트 추가 완료 (`tests/visual/customer-sale-flow.spec.ts`)
 
 ### 9-2. 미완료 또는 임시 처리 항목
 - [x] `/shop`은 실결제 없는 placeholder 상태
 - [x] `passProgress`, `liveOps`는 저장 슬롯 중심이고 보상 규칙은 후속
 - [x] 시간대 레시피 구매 ownership은 여전히 `beverageCodex.purchasedTimeRecipeIds`에 별도 저장됨
-- [x] ownership 핵심 회귀는 `tests/visual/recipe-ownership.spec.ts`로 고정됐지만, 레벨/미션/스킨/손님 저장까지 넓은 메타 저장 자동화는 아직 부족함
+- [x] 레벨/미션/스킨/손님 저장 persistence baseline은 `tests/visual/meta-persistence.spec.ts`로 고정됐음
+- [x] 손님 판매 write path baseline은 `tests/visual/customer-sale-flow.spec.ts`로 고정됐지만, 선호 보너스 세부값 / 일일 quota rollover / 대표 손님 교체까지는 아직 자동화가 얇음
 - [x] 시간대 판정은 로컬 시간 하드코딩 기준
 - [x] `coffee_2048_project_handoff_master.md` 참조는 남아 있지만 실제 파일은 레포에 없음
 
@@ -343,7 +354,8 @@ Cursor는 바로 구현부터 들어가지 말고 아래 순서로 시작해야 
 - `passProgress`, `liveOps`는 저장/표시 중심이며 실제 시즌 보상 구조가 아직 닫히지 않았다
 
 ### 10-5. 손님 최소 연결 훅의 실사용 부재
-- 손님 훅은 애정도/스토리 ping까지는 연결됐지만, 주문 시스템/특별 원두/대형 보상 구조와는 아직 분리돼 있다
+- 손님 훅은 애정도/스토리/단골 판정 write path까지는 회귀가 고정됐지만, 선호 보너스 세부값·일일 quota rollover·다음 날 대표 손님 교체까지는 아직 얇다
+- 주문 시스템/특별 원두/대형 보상 구조와는 아직 분리돼 있다
 
 ---
 
@@ -352,13 +364,13 @@ Cursor는 바로 구현부터 들어가지 말고 아래 순서로 시작해야 
 이번 문서를 읽은 뒤 Cursor는 보통 아래 순서로 이어가는 것이 좋다.
 
 ### 1순위
-ownership 회귀 테스트 범위를 레벨/미션/스킨/손님 저장까지 확장할지 범위 설계
+선호 메뉴 판매 보너스(write path) 회귀를 실제 자동 판매 흐름으로 고정
 
 ### 2순위
-ownership helper가 정리된 뒤 남은 write path 이원화(accountLevel vs beverageCodex)를 언제 통합할지 설계
+오늘의 손님 daily quota 소진 / 다음 날 rollover / 대표 손님 교체 회귀를 좁은 범위로 고정
 
 ### 3순위
-핵심손님 최소 연결 훅을 주문/특별 원두 없이 확장 가능한 범위만 검토
+단골 흔적/팁 ping이 실제 판매 뒤 표시되는지 최소 UI 회귀를 추가로 고정
 
 ### 4순위
 밸런싱 2차 조정
