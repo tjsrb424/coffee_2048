@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { AppShell } from "@/components/layout/AppShell";
+import { Card } from "@/components/ui/Card";
 import { CafeUpgradesCard } from "@/features/menu/components/CafeUpgradesCard";
 import { ResourceBar } from "@/features/lobby/components/ResourceBar";
 import { useResetDocumentScrollOnMount } from "@/hooks/useResetDocumentScrollOnMount";
@@ -15,14 +16,14 @@ export function ExtensionHubScreen() {
       <AppShell>
         <header className="mb-5">
           <p className="text-xs font-semibold uppercase tracking-wide text-coffee-600/60">
-            Grow
+            Growth
           </p>
           <h1 className="text-2xl font-bold tracking-tight text-coffee-900">
-            매장이 자라는 방식
+            설비 성장
           </h1>
           <p className="mt-2 text-sm leading-relaxed text-coffee-700">
-            로비에서 모은 코인으로 설비를 다듬고, 시즌과 손님 이야기는 천천히
-            쌓여 가요. 바쁜 시트 대신, 여긴 조금 느린 메모장 같은 곳이에요.
+            1.0에서 이 화면에 남는 것은 설비 업그레이드입니다. 시즌, 패스, 이벤트 같은
+            확장 표면은 출시 후 예정 메모로만 낮춰 둡니다.
           </p>
           <p className="mt-2 text-xs text-coffee-600/75">
             <Link
@@ -36,14 +37,24 @@ export function ExtensionHubScreen() {
 
         <ResourceBar variant="compact" />
 
-        <LiveOpsPlaceholderSection />
+        <Card className="mt-4 p-4">
+          <div className="text-xs font-semibold uppercase tracking-wide text-coffee-600/60">
+            1.0 포함 범위
+          </div>
+          <p className="mt-2 text-sm leading-relaxed text-coffee-800">
+            현재 일반 유저 기준으로는 설비 업그레이드만 활성 기능으로 보고, 시즌 패스,
+            liveOps, 이벤트 손님 표면은 일반 출시 기능처럼 보이지 않게 유지합니다.
+          </p>
+        </Card>
 
-        <div className="mt-8">
+        <div className="mt-6">
           <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-coffee-600/60">
             설비 성장
           </p>
           <CafeUpgradesCard />
         </div>
+
+        <LiveOpsPlaceholderSection />
       </AppShell>
     </>
   );

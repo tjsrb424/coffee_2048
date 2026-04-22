@@ -19,6 +19,11 @@
 
 이번 세션에서 현재 상태 기준으로 추가 반영된 파일은 아래다.
 
+- `src/features/lobby/components/LobbyScreen.tsx`
+- `src/features/settings/components/SettingsHubScreen.tsx`
+- `src/features/shop/components/ShopPlaceholderScreen.tsx`
+- `src/features/extension/components/ExtensionHubScreen.tsx`
+- `src/features/extension/components/LiveOpsPlaceholderSection.tsx`
 - `docs/figma_ui_swap_plan.md`
 - `docs/release_scope_1_0.md`
 - `docs/09_cursor_workflow.md`
@@ -38,6 +43,10 @@
 - `prompts/next_cursor_task.md`
 
 핵심 반영 내용:
+- 이번 세션에서는 1.0 범위 밖인 `/shop`, `pass/liveOps`, placeholder BM 표면이 일반 유저에게 1.0 기능처럼 보이지 않도록 노출 정책을 실제 UI에 반영했다.
+- 로비 상단 메뉴와 설정 화면에서 `/shop` 직접 진입을 제거하고, `/shop` route 자체는 QA/direct route 용 **비출시 데모 보관함**으로만 남겼다.
+- `/shop` 화면은 `오프라인 보상 x2`, `퍼즐 결과 x2(코인+원두만)`만 1.0 BM 범위라는 점을 명시하고, 광고 제거 / 스타터 팩 / 테마 / 꾸미기 표면은 `출시 후 예정`으로 비활성화했다.
+- `/extension` 화면은 1.0 포함 기능인 설비 업그레이드를 먼저 보이게 두고, `pass/liveOps`, 특별 손님 확장, 시즌 이벤트는 **출시 후 예정 메모** 레이어로 낮췄다.
 - 이번 세션에서는 현재 UI를 최종 비주얼이 아닌 **기능 셸(functional shell)** 로 정의하고, 이후 Figma 기준 전체 UI 교체를 쉽게 하기 위한 `docs/figma_ui_swap_plan.md`를 추가했다.
 - 문서에서 `기능 셸로 유지할 영역`, `Figma 교체 예정 영역`, `교체 시 깨질 위험이 있는 결합 포인트`, `지금 미리 분리해두면 좋은 컴포넌트`, `유지해야 할 test id / QA 포인트`를 분리해 정리했다.
 - 현재 로비/바텀시트/HUD/상점/time-shop UI는 기능 구현과 QA를 우선하는 셸로 보고, spacing/padding/polish 과투자를 피한다는 전제를 handoff 문서에도 반영했다.
@@ -370,8 +379,8 @@ Cursor는 바로 구현부터 들어가지 말고 아래 순서로 시작해야 
 ### 9-2. 미완료 또는 임시 처리 항목
 - [x] 현재 UI는 최종 비주얼이 아니라 기능 셸로 간주하고, Figma 기준 전체 교체는 후속 세션에서 진행하기로 문서상 고정했다
 - [x] 로비/상점/카운터/쇼케이스/HUD/바텀시트는 외형 교체 대상이지만, route / action / test id / source of truth는 유지 대상으로 분리했다
-- [x] `/shop`은 실결제 없는 placeholder 상태
-- [x] `passProgress`, `liveOps`는 저장 슬롯 중심이고 보상 규칙은 후속
+- [x] `/shop`은 일반 진입점에서 숨기고, direct route에서는 비출시 데모 보관함으로만 남겼다
+- [x] `passProgress`, `liveOps`는 저장 슬롯 중심이고 보상 규칙은 후속이며, 현재 UI에서도 출시 후 예정 메모 수준으로만 노출한다
 - [x] 1.0 BM 범위는 문서상 `오프라인 보상 x2`, `퍼즐 결과 x2(코인+원두만)`으로 고정했고, 나머지 BM 확장은 1.1 이후로 넘기기로 결정했다
 - [x] `테마 스킨`, `이펙트 스킨`은 1.0 포함 기능이 아니라 1.1 후보로 문서상 분리했다
 - [x] 시간대 레시피 구매 ownership은 여전히 `beverageCodex.purchasedTimeRecipeIds`에 별도 저장됨
@@ -420,7 +429,7 @@ Cursor는 바로 구현부터 들어가지 말고 아래 순서로 시작해야 
 - 현재 ownership 회귀 테스트는 브라우저 시간 mocking으로 고정됐지만, 다른 시간대 메타 조합까지 한 번에 다루는 공용 테스트 유틸은 아직 얇다
 
 ### 10-4. placeholder 구조의 오해
-- `/shop`은 실결제/BM 구현이 아니라 로컬 placeholder 저장이다
+- `/shop`은 실결제/BM 구현이 아니라 direct route 기준 비출시 데모 보관함이다
 - `passProgress`, `liveOps`는 저장/표시 중심이며 실제 시즌 보상 구조가 아직 닫히지 않았다
 - 따라서 1.0 출시선 문서에서는 BM을 `/shop` 기준으로 읽지 않고, `오프라인 보상 x2`와 `퍼즐 결과 x2(코인+원두만)`만 출시선에 포함된다고 명시했다
 

@@ -1,8 +1,6 @@
 "use client";
 
-import Link from "next/link";
 import { Card } from "@/components/ui/Card";
-import { useAppStore } from "@/stores/useAppStore";
 import { LiveOpsDevTools } from "./LiveOpsDevTools";
 
 /**
@@ -10,9 +8,6 @@ import { LiveOpsDevTools } from "./LiveOpsDevTools";
  * 실제 보상 룰은 후속 연결.
  */
 export function LiveOpsPlaceholderSection() {
-  const pass = useAppStore((s) => s.passProgress);
-  const liveOps = useAppStore((s) => s.liveOps);
-
   return (
     <div className="space-y-5">
       <section aria-labelledby="liveops-season">
@@ -20,20 +15,12 @@ export function LiveOpsPlaceholderSection() {
           id="liveops-season"
           className="mb-2 text-xs font-semibold uppercase tracking-wide text-coffee-600/60"
         >
-          시즌 일지
+          출시 후 예정 메모
         </h2>
         <Card className="border border-coffee-600/8 bg-cream-50/90 p-4 shadow-card">
           <p className="text-sm leading-relaxed text-coffee-800">
-            오늘의 작은 목표를 쌓아 두는 곳이에요. 티어와 XP는 저장만 해 두고,
-            보상은 천천히 연결할 예정이에요.
-          </p>
-          <p className="mt-3 text-sm tabular-nums text-coffee-900">
-            시즌 {pass.seasonId} · 티어 {pass.tier} · XP {pass.xp}
-            {pass.premiumUnlocked ? (
-              <span className="ml-2 text-xs font-semibold text-accent-soft">
-                프리미엄 트랙
-              </span>
-            ) : null}
+            시즌 패스, 프리미엄 트랙, 시즌 XP 보상은 현재 저장 슬롯만 준비된 상태예요.
+            1.0 일반 노출에서는 열지 않고, 출시 후 예정 메모로만 남겨 둡니다.
           </p>
         </Card>
       </section>
@@ -43,16 +30,12 @@ export function LiveOpsPlaceholderSection() {
           id="liveops-guests"
           className="mb-2 text-xs font-semibold uppercase tracking-wide text-coffee-600/60"
         >
-          단골과 특별 손님
+          특별 손님 확장
         </h2>
         <Card className="border border-coffee-600/8 bg-cream-50/90 p-4 shadow-card">
           <p className="text-sm leading-relaxed text-coffee-800">
-            매장이 익숙해질수록 남는 이야기를 모아 둘 거예요.
-          </p>
-          <p className="mt-2 text-xs text-coffee-700">
-            {liveOps.unlockedGuestIds.length > 0
-              ? liveOps.unlockedGuestIds.join(" · ")
-              : "아직 열린 인연 없음"}
+            특별 손님, 확장형 관계 메타, 이벤트 손님 표면은 1.0 포함 범위가 아닙니다.
+            현재는 이후 연결을 위한 자리만 남겨 둡니다.
           </p>
         </Card>
       </section>
@@ -66,25 +49,14 @@ export function LiveOpsPlaceholderSection() {
         </h2>
         <Card className="border border-coffee-600/8 bg-cream-50/90 p-4 shadow-card">
           <p className="text-sm leading-relaxed text-coffee-800">
-            벚꽃이든 여름이든, 잠깐 들르는 작은 축제를 여기에 걸어 둘게요.
-          </p>
-          <p className="mt-2 text-xs text-coffee-700">
-            {liveOps.activeEventIds.length > 0
-              ? liveOps.activeEventIds.join(" · ")
-              : "예정된 이벤트 없음"}
+            시즌 이벤트, liveOps 운영, 이벤트 토큰 구조는 1.0 출시 후 예정입니다.
+            일반 유저에게는 활성 기능처럼 보이지 않게 유지합니다.
           </p>
         </Card>
       </section>
 
       <p className="text-center text-xs leading-relaxed text-coffee-600/75">
-        테마와 감성 소비는{" "}
-        <Link
-          href="/shop"
-          className="font-semibold text-coffee-800 underline-offset-2 hover:underline"
-        >
-          상점
-        </Link>
-        에서 만나요.
+        이 영역은 향후 Figma 교체와 함께 다시 열 수 있는 비출시 메모 표면입니다.
       </p>
 
       <LiveOpsDevTools />

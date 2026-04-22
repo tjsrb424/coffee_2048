@@ -382,7 +382,6 @@ function LobbyTopMenu({
             >
               {[
                 { href: "/settings", label: t("nav.settings") },
-                { href: "/shop", label: t("nav.shop") },
                 { href: "/codex", label: t("nav.codex") },
                 { href: "/time-shop", label: t("nav.timeShop") },
                 { href: "/menu", label: t("nav.menu") },

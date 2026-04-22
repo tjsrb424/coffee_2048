@@ -19,44 +19,32 @@ const PRODUCTS = [
   {
     id: "ad_free",
     title: "광고 제거 패스",
-    blurb: "전면·선택 광고 완화(웹 1차 목표)",
-    action: "adFree" as const,
+    blurb: "1.0 일반 노출에서는 숨기고, 출시 후 검토 항목으로만 남겨 둡니다.",
   },
   {
     id: "starter_pack",
     title: "스타터 팩",
-    blurb: "코인·원두·장식(실결제 전 placeholder)",
-    action: "starter" as const,
+    blurb: "실결제/보상 팩은 1.0 범위 밖이라 이번 출시선에서는 열지 않습니다.",
   },
   {
     id: "theme_sakura",
     title: "벚꽃 카페 테마",
-    blurb: "로비 씬 팔레트만 변경 · 퍼즐 공정성 무관",
-    action: "theme" as const,
-    themeId: "sakura",
+    blurb: "꾸미기/테마 BM은 1.0 이후 검토 대상으로만 남겨 둡니다.",
   },
   {
     id: "theme_night_jazz",
     title: "야간 재즈 테마",
-    blurb: "로비 야간 톤",
-    action: "theme" as const,
-    themeId: "night_jazz",
+    blurb: "꾸미기/테마 BM은 1.0 이후 검토 대상으로만 남겨 둡니다.",
   },
 ];
 
-/** 실결제 없음 — 로컬 entitlements / 소장만 갱신 */
+/** 1.0 일반 노출에서는 숨긴 비출시 데모 보관함 */
 export function ShopPlaceholderScreen() {
   useResetDocumentScrollOnMount();
   const { lightTap } = useGameFeedback();
-  const bm = useAppStore((s) => s.bm);
   const coins = useAppStore((s) => s.playerResources.coins);
   const account = normalizeAccountLevelState(useAppStore((s) => s.accountLevel));
-  const ownedProductIds = useAppStore((s) => s.ownedProductIds);
   const cosmetics = useAppStore((s) => s.cosmetics);
-  const patchBm = useAppStore((s) => s.patchBm);
-  const grantPlaceholderProduct = useAppStore((s) => s.grantPlaceholderProduct);
-  const equipThemeIfOwned = useAppStore((s) => s.equipThemeIfOwned);
-  const patchPlayerResources = useAppStore((s) => s.patchPlayerResources);
   const purchasePuzzleSkin = useAppStore((s) => s.purchasePuzzleSkin);
   const equipPuzzleSkin = useAppStore((s) => s.equipPuzzleSkin);
 
@@ -65,47 +53,46 @@ export function ShopPlaceholderScreen() {
       <AppShell>
         <header className="mb-5">
           <p className="text-xs font-semibold uppercase tracking-wide text-coffee-600/60">
-            Shop
+            Non-release Demo
           </p>
           <h1 className="text-2xl font-bold tracking-tight text-coffee-900">
-            작은 지원과 꾸밈
+            비출시 데모 보관함
           </h1>
           <p className="mt-2 text-sm leading-relaxed text-coffee-700">
-            웹 우선 상점(데모)이에요. 실제 결제는 연결하지 않았고, 버튼으로만
-            저장 데이터를 채워 둡니다. 퍼즐 공정성은 건드리지 않아요.
+            이 화면은 1.0 일반 진입점에서 숨겨 둔 데모/출시 후 예정 보관함이에요.
+            실제 1.0 기능처럼 노출하지 않고, direct route와 QA 용도로만 남겨 둡니다.
           </p>
         </header>
 
         <Card className="mb-4 space-y-2 border border-coffee-600/8 bg-cream-50/95 p-4 shadow-card">
           <div className="text-xs font-semibold uppercase tracking-wide text-coffee-600/60">
-            나의 보유
+            1.0 BM 메모
           </div>
-          <p className="text-sm text-coffee-800">
-            광고 제거: {bm.adFree ? "예" : "아니오"} · 서포터 티어:{" "}
-            {bm.supporterTier}
+          <p className="text-sm leading-relaxed text-coffee-800">
+            1.0에 남는 BM 표면은 오프라인 보상 x2와 퍼즐 결과 x2뿐입니다.
           </p>
-          <p className="text-sm text-coffee-800">
-            장착 테마:{" "}
-            <span className="font-semibold tabular-nums">
-              {cosmetics.equippedThemeId}
-            </span>
+          <p className="text-xs leading-relaxed text-coffee-700/78">
+            단, 퍼즐 결과 x2는 코인과 원두만 2배로 보고, 미션/손님/도감/해금 진척은
+            배수 대상이 아닙니다.
           </p>
-          <p className="text-xs text-coffee-600/70">
-            소장 테마: {cosmetics.ownedThemeIds.join(", ")}
+          <p className="text-xs leading-relaxed text-coffee-700/78">
+            광고 제거, 스타터 팩, 테마/꾸미기, pass/liveOps, 실결제 확장은 이번 출시선에서
+            열지 않습니다.
           </p>
         </Card>
 
         <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-coffee-600/60">
-          2048 스킨
+          퍼즐 스킨 데모
         </p>
         <Card className="mb-4 space-y-4 border border-coffee-600/8 bg-cream-50/95 p-4 shadow-card">
           <div className="flex items-center justify-between gap-3">
             <div>
               <div className="text-sm font-bold text-coffee-900">
-                퍼즐 감성 바꾸기
+                퍼즐 스킨 직접 테스트
               </div>
               <p className="mt-1 text-xs leading-relaxed text-coffee-700">
-                코인으로 보드와 블록 스킨을 담고 바로 장착해요.
+                퍼즐 스킨은 현재 direct route/QA 기준으로만 남겨 둔 비출시 데모예요.
+                일반 1.0 진입에서는 상점 표면으로 노출하지 않습니다.
               </p>
             </div>
             <div className="inline-flex items-center gap-1 rounded-full bg-cream-200/70 px-3 py-1.5 text-sm font-bold tabular-nums text-coffee-900 ring-1 ring-coffee-600/8">
@@ -148,11 +135,10 @@ export function ShopPlaceholderScreen() {
         </Card>
 
         <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-coffee-600/60">
-          감성 소비 · 데모
+          출시 후 예정
         </p>
         <ul className="space-y-3">
           {PRODUCTS.map((p) => {
-            const owned = ownedProductIds.includes(p.id);
             return (
               <li key={p.id}>
                 <Card className="border border-coffee-600/8 bg-cream-50/95 p-4 shadow-card">
@@ -164,53 +150,19 @@ export function ShopPlaceholderScreen() {
                       <p className="mt-1 text-xs leading-relaxed text-coffee-700">
                         {p.blurb}
                       </p>
-                      {owned ? (
-                        <p className="mt-2 text-xs font-semibold text-accent-soft">
-                          담아 둠 · 로컬 저장
-                        </p>
-                      ) : null}
+                      <p className="mt-2 text-xs font-semibold text-coffee-600/70">
+                        1.0 비출시 표면
+                      </p>
                     </div>
                     <Button
                       type="button"
-                      variant="soft"
+                      variant="ghost"
                       className="shrink-0"
-                      disabled={owned}
-                      onClick={() => {
-                        lightTap();
-                        if (p.action === "adFree") {
-                          grantPlaceholderProduct({ productId: p.id });
-                          patchBm({ adFree: true });
-                        } else if (p.action === "starter") {
-                          grantPlaceholderProduct({ productId: p.id });
-                          patchPlayerResources({ coins: 200, beans: 20 });
-                        } else if (p.action === "theme" && p.themeId) {
-                          grantPlaceholderProduct({
-                            productId: p.id,
-                            unlockThemeIds: [p.themeId],
-                          });
-                          equipThemeIfOwned(p.themeId);
-                        }
-                      }}
+                      disabled
                     >
-                      {owned ? "보유" : "데모로 담기"}
+                      출시 후 예정
                     </Button>
                   </div>
-                  {p.action === "theme" && p.themeId && cosmetics.ownedThemeIds.includes(p.themeId) ? (
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        className="text-xs"
-                        disabled={cosmetics.equippedThemeId === p.themeId}
-                        onClick={() => {
-                          lightTap();
-                          equipThemeIfOwned(p.themeId!);
-                        }}
-                      >
-                        장착
-                      </Button>
-                    </div>
-                  ) : null}
                 </Card>
               </li>
             );

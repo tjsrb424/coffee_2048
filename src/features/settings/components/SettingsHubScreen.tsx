@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { AppShell } from "@/components/layout/AppShell";
 import { LobbyReturnButton } from "@/components/navigation/LobbyReturnButton";
 import { Card } from "@/components/ui/Card";
@@ -29,18 +28,15 @@ export function SettingsHubScreen() {
 
         <Card className="mb-4 p-4">
           <div className="text-xs font-semibold uppercase tracking-wide text-coffee-600/60">
-            웹 상점
+            1.0 BM 메모
           </div>
-          <p className="mt-2 text-sm text-coffee-800">
-            테마·광고 제거 등 placeholder 결제는 상점 화면에서 테스트해요.
+          <p className="mt-2 text-sm leading-relaxed text-coffee-800">
+            1.0에서는 오프라인 보상 x2와 퍼즐 결과 x2만 최소 범위로 남깁니다.
           </p>
-          <Link
-            href="/shop"
-            className="mt-3 inline-block text-sm font-semibold text-coffee-900 underline-offset-2 hover:underline"
-            onClick={() => lightTap()}
-          >
-            상점 열기
-          </Link>
+          <p className="mt-2 text-xs leading-relaxed text-coffee-700/78">
+            단, 퍼즐 결과 x2는 코인과 원두에만 적용하고, 상점·테마·광고 제거·패스·실결제
+            표면은 일반 진입에서 숨깁니다.
+          </p>
         </Card>
 
         <Card className="space-y-3">
