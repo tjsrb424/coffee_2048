@@ -39,6 +39,7 @@
 - `src/features/meta/balance/cafeModifiers.ts`
 - `src/features/meta/rewards/offlineCafeReward.ts`
 - `tests/visual/recipe-ownership.spec.ts`
+- `tests/visual/core-loop.spec.ts`
 - `docs/codex_4th_pass_handoff.md`
 - `prompts/next_cursor_task.md`
 
@@ -66,6 +67,8 @@
 - 후반(50+)은 미션 수치 증가율을 완만하게 낮춰 “레벨은 오르는데 해야 할 일만 늘어나는” 감각을 줄였다.
 - 오프라인 보상은 전체 경제 완화와 겹쳐 과속하지 않도록 `90분 cap + 50% 정산`으로 소폭 낮췄다.
 - `tests/visual/recipe-ownership.spec.ts` 기대값을 새 시간대 레시피 가격에 맞춰 갱신하고 회귀를 다시 통과시켰다.
+- 이번 세션에서는 `tests/visual/core-loop.spec.ts`를 추가해, **퍼즐 1판 -> 결과 보상 -> 로비 반영 -> 로스팅/제작/진열/판매 -> 코인 증가 -> 새로고침 유지**가 실제 UI + 저장 write path 기준으로 한 번 닫히는지 Playwright 회귀 1건으로 고정했다.
+- 이 테스트는 기존 `ownershipTestUtils.ts`의 디버그 save import/export와 고정 시계를 재사용하고, 퍼즐 쪽은 고정 RNG + 짧은 입력 시퀀스로 최소 득점 경로만 재현하도록 설계했다.
 
 ---
 
@@ -375,6 +378,7 @@ Cursor는 바로 구현부터 들어가지 말고 아래 순서로 시작해야 
 - [x] 성장 구조 밸런스 2차 완료: 미션 목표치 / 초반 레시피 가격 / 시간대 메뉴 해금 레벨 / 재료 가격 / 업그레이드 비용 / 오프라인 보상 비율 재조정
 - [x] 중반 해금 인지 UX 최소 보강 완료: 성장 카드 다음 해금 preview, 로비 상점의 떠돌이 판매상 한 줄 안내, 시간대 상점의 `새로 열림 / 지금 추천 / 다음에 열림` 배지 추가
 - [x] 중반 해금 인지 UX 회귀 추가 완료 (`tests/visual/recipe-ownership.spec.ts`)
+- [x] 퍼즐 1판 -> 결과 보상 -> 로비 자원 반영 -> 로스팅/제작/진열/판매 -> 코인 증가 -> 새로고침 유지 핵심 루프 회귀 추가 완료 (`tests/visual/core-loop.spec.ts`)
 
 ### 9-2. 미완료 또는 임시 처리 항목
 - [x] 현재 UI는 최종 비주얼이 아니라 기능 셸로 간주하고, Figma 기준 전체 교체는 후속 세션에서 진행하기로 문서상 고정했다
@@ -386,6 +390,7 @@ Cursor는 바로 구현부터 들어가지 말고 아래 순서로 시작해야 
 - [x] 시간대 레시피 구매 ownership은 여전히 `beverageCodex.purchasedTimeRecipeIds`에 별도 저장됨
 - [x] 레벨/미션/스킨/손님 저장 persistence baseline은 `tests/visual/meta-persistence.spec.ts`로 고정됐음
 - [x] 손님 판매 write path baseline은 `tests/visual/customer-sale-flow.spec.ts`로 고정됐고, 선호 보너스 / daily quota day-boundary / 대표 손님 교체 / 단골 흔적 UI / `saleSession` 날짜 경계 재생성까지 포함됨. 다만 day-boundary UI 결합 회귀는 아직 얇음
+- [x] 1.0 핵심 운영 루프 baseline은 `tests/visual/core-loop.spec.ts`로 한 번 더 고정됐고, 퍼즐 보상 적용 뒤 실제 로스터/제작/진열/판매를 거쳐 새로고침 후에도 `playerResources`, `puzzleProgress`, `accountLevel`, `beverageCodex`, `menuStock`이 유지되는지 확인함
 - [x] 시간대 판정은 로컬 시간 하드코딩 기준
 - [x] `coffee_2048_project_handoff_master.md` 참조는 남아 있지만 실제 파일은 레포에 없음
 - [x] 오프라인 보상은 아직 1차 단순 버전이라 `진열 중인 재고 판매 + 부분 코인 정산`까지만 다루고, 생산/주문/손님 메타 복합 시뮬레이션은 의도적으로 비웠음
