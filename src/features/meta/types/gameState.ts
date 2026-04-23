@@ -301,11 +301,34 @@ export type MissionEvent =
     }
   | { type: "skinPurchased"; skinId: string };
 
+export type RewardedAdPlacement =
+  | "offline_reward_double"
+  | "puzzle_result_double";
+
+export type RewardedAdMockBehavior =
+  | "success"
+  | "cancel"
+  | "error"
+  | "no_fill"
+  | "unsupported";
+
 export type PendingOfflineReward = {
+  claimId: string;
   generatedAtMs: number;
   elapsedMs: number;
   soldCount: number;
   pendingCoins: number;
+};
+
+export type PendingPuzzleRewardClaim = {
+  claimId: string;
+  generatedAtMs: number;
+  score: number;
+  highestTile: number;
+  mergeCount: number;
+  baseCoins: number;
+  baseBeans: number;
+  baseHearts: number;
 };
 
 export type CafeState = {
@@ -349,6 +372,8 @@ export type MetaRuntimeState = {
   lastHeartRegenAtMs: number;
   /** 오프라인 보상 계산 기준 마지막 접속 시각(ms) */
   lastSeenAtMs: number;
+  /** 아직 수령하지 않은 퍼즐 결과 보상 */
+  pendingPuzzleRewardClaim: PendingPuzzleRewardClaim | null;
 };
 
 /** 웹 BM 권한(실결제 없음 — placeholder 연동용) */

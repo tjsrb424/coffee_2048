@@ -6,8 +6,11 @@ import { AnimatePresence, motion } from "framer-motion";
 import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/Button";
 import { HeartIcon } from "@/components/ui/HeartIcon";
-import { computePuzzleRewards } from "@/features/meta/rewards/computePuzzleRewards";
 import { useGameFeedback } from "@/hooks/useGameFeedback";
+import {
+  type RewardedAdResult,
+  requestRewardedAd,
+} from "@/lib/ads/rewardedAds";
 import { runSceneTransition } from "@/lib/runSceneTransition";
 import { useAppStore } from "@/stores/useAppStore";
 import { useLobbyFxStore } from "@/stores/useLobbyFxStore";
@@ -15,6 +18,7 @@ import { useLockDocumentScroll } from "../hooks/useLockDocumentScroll";
 import { usePreventTouchScroll } from "../hooks/usePreventTouchScroll";
 import { usePuzzleKeyboard } from "../hooks/usePuzzleKeyboard";
 import { useSwipe } from "../hooks/useSwipe";
+import type { PendingPuzzleRewardClaim } from "@/features/meta/types/gameState";
 import {
   readPuzzleOutcomeFromState,
   usePuzzleSessionStore,
@@ -29,29 +33,61 @@ import {
   type SessionResultPayload,
 } from "./SessionResultModal";
 
+function payloadFromPendingClaim(
+  claim: PendingPuzzleRewardClaim,
+): SessionResultPayload {
+  return {
+    score: claim.score,
+    highestTile: claim.highestTile,
+    mergeCount: claim.mergeCount,
+    rewards: {
+      coins: claim.baseCoins,
+      beans: claim.baseBeans,
+      hearts: claim.baseHearts,
+    },
+  };
+}
+
 export function PuzzleScreen() {
   const router = useRouter();
   const startFresh = usePuzzleSessionStore((s) => s.startFresh);
   const tryMove = usePuzzleSessionStore((s) => s.tryMove);
   const gameOver = usePuzzleSessionStore((s) => s.gameOver);
   const inputLocked = usePuzzleSessionStore((s) => s.inputLocked);
-  const applyOutcome = useAppStore((s) => s.applyPuzzleRunOutcome);
-  const consumeHeart = useAppStore((s) => s.consumePuzzleHeart);
+  const pendingPuzzleRewardClaim = useAppStore(
+    (s) => s.meta.pendingPuzzleRewardClaim,
+  );
+  const preparePuzzleRewardClaim = useAppStore((s) => s.preparePuzzleRewardClaim);
+  const claimPuzzleReward = useAppStore((s) => s.claimPuzzleReward);
   const hearts = useAppStore((s) => s.playerResources.hearts);
   const bestScoreMeta = useAppStore((s) => s.puzzleProgress.bestScore);
   const { lightTap, mergePulse, moveWhoosh } = useGameFeedback();
 
   const [paused, setPaused] = useState(false);
-  const [resultOpen, setResultOpen] = useState(false);
-  const [resultPayload, setResultPayload] = useState<SessionResultPayload | null>(
-    null,
-  );
-  const [resultShowRetry, setResultShowRetry] = useState(false);
   const [noHeartOpen, setNoHeartOpen] = useState(false);
+  const [claimMode, setClaimMode] = useState<"idle" | "base" | "ad">("idle");
+  const [claimNotice, setClaimNotice] = useState<string | null>(null);
 
-  const appliedRef = useRef(false);
   const gestureRef = usePreventTouchScroll();
   const gameOverResultShownRef = useRef(false);
+  const resultPayload = pendingPuzzleRewardClaim
+    ? payloadFromPendingClaim(pendingPuzzleRewardClaim)
+    : null;
+  const resultOpen = !!resultPayload;
+
+  const noticeForAdResult = useCallback((result: RewardedAdResult) => {
+    switch (result.status) {
+      case "cancelled":
+        return "광고 보상을 끝까지 받지 못했어요. 기본 보상은 바로 받을 수 있어요.";
+      case "no_fill":
+        return "지금은 볼 수 있는 광고가 없어요. 기본 보상은 바로 받을 수 있어요.";
+      case "unsupported":
+        return "이 환경에서는 보상형 광고를 지원하지 않아요. 기본 보상은 바로 받을 수 있어요.";
+      case "error":
+      default:
+        return "광고를 지금 준비하지 못했어요. 잠시 뒤 다시 시도해 주세요.";
+    }
+  }, []);
 
   useLockDocumentScroll(true);
 
@@ -60,85 +96,113 @@ export function PuzzleScreen() {
   }, [router]);
 
   useEffect(() => {
+    if (pendingPuzzleRewardClaim) {
+      setPaused(false);
+      setNoHeartOpen(false);
+      return;
+    }
     if (hearts <= 0) {
       setNoHeartOpen(true);
       return;
     }
-    appliedRef.current = false;
     gameOverResultShownRef.current = false;
-    setResultOpen(false);
-    setResultPayload(null);
-    setResultShowRetry(false);
+    setClaimMode("idle");
+    setClaimNotice(null);
     startFresh();
-  }, [hearts, startFresh]);
+  }, [hearts, pendingPuzzleRewardClaim, startFresh]);
 
-  const buildResultPayload = useCallback((): SessionResultPayload => {
+  const openLeaveResult = useCallback(() => {
+    if (pendingPuzzleRewardClaim) return;
     const { score, highestTile, mergeCount } = readPuzzleOutcomeFromState(
       usePuzzleSessionStore.getState(),
     );
-    return {
+    preparePuzzleRewardClaim({
       score,
       highestTile,
       mergeCount,
-      rewards: computePuzzleRewards(score, highestTile),
-    };
-  }, []);
-
-  const openLeaveResult = useCallback(() => {
-    setResultPayload(buildResultPayload());
-    setResultShowRetry(false);
+    });
+    setClaimNotice(null);
     setPaused(false);
-    setResultOpen(true);
-  }, [buildResultPayload]);
+  }, [pendingPuzzleRewardClaim, preparePuzzleRewardClaim]);
 
   useEffect(() => {
-    if (gameOver && !gameOverResultShownRef.current) {
+    if (
+      gameOver &&
+      !gameOverResultShownRef.current &&
+      !pendingPuzzleRewardClaim
+    ) {
+      const { score, highestTile, mergeCount } = readPuzzleOutcomeFromState(
+        usePuzzleSessionStore.getState(),
+      );
       gameOverResultShownRef.current = true;
-      setResultPayload(buildResultPayload());
-      setResultShowRetry(true);
+      preparePuzzleRewardClaim({
+        score,
+        highestTile,
+        mergeCount,
+      });
+      setClaimNotice(null);
       setPaused(false);
-      setResultOpen(true);
     }
-    if (!gameOver) {
+    if (!gameOver && !pendingPuzzleRewardClaim) {
       gameOverResultShownRef.current = false;
     }
-  }, [buildResultPayload, gameOver]);
+  }, [gameOver, pendingPuzzleRewardClaim, preparePuzzleRewardClaim]);
 
-  const confirmLobbyFromResult = useCallback(() => {
-    if (appliedRef.current || !resultPayload) return;
-    appliedRef.current = true;
-    applyOutcome({
-      score: resultPayload.score,
-      highestTile: resultPayload.highestTile,
-      mergeCount: resultPayload.mergeCount,
-    });
-    const prog = useAppStore.getState().puzzleProgress;
-    useLobbyFxStore.getState().setPuzzleHotspotHints({
-      roast: prog.lastRunBeans > 0,
-      counter: prog.lastRunCoins > 0,
-    });
-    // 로비 HUD로 “보상이 흘러 들어오는” 1회 연출 트리거
-    useLobbyFxStore.getState().pingPuzzleRewards(resultPayload.rewards);
-    runSceneTransition(() => router.push("/lobby"), "/lobby");
-  }, [applyOutcome, resultPayload, router]);
+  const completeClaimAndGoLobby = useCallback(
+    (rewards: SessionResultPayload["rewards"]) => {
+      setClaimMode("idle");
+      setClaimNotice(null);
+      setPaused(false);
+      setNoHeartOpen(false);
+      gameOverResultShownRef.current = false;
+      const fxStore = useLobbyFxStore.getState();
+      fxStore.setPuzzleHotspotHints({
+        roast: rewards.beans > 0,
+        counter: rewards.coins > 0,
+      });
+      fxStore.pingPuzzleRewards(rewards);
+      runSceneTransition(() => router.push("/lobby"), "/lobby");
+    },
+    [router],
+  );
 
-  const retryFromResult = useCallback(() => {
-    if (!consumeHeart()) {
-      setNoHeartOpen(true);
+  const claimCurrentPuzzleReward = useCallback(
+    (doubled: boolean) => {
+      if (!pendingPuzzleRewardClaim) return null;
+      const claimed = claimPuzzleReward({
+        claimId: pendingPuzzleRewardClaim.claimId,
+        doubled,
+      });
+      if (!claimed) {
+        setClaimMode("idle");
+        setClaimNotice("이미 정산된 결과예요.");
+        return null;
+      }
+      completeClaimAndGoLobby(claimed.rewards);
+      return claimed;
+    },
+    [claimPuzzleReward, completeClaimAndGoLobby, pendingPuzzleRewardClaim],
+  );
+
+  const claimBaseReward = useCallback(() => {
+    if (claimMode !== "idle") return;
+    setClaimMode("base");
+    setClaimNotice(null);
+    claimCurrentPuzzleReward(false);
+  }, [claimCurrentPuzzleReward, claimMode]);
+
+  const claimDoubleReward = useCallback(async () => {
+    if (claimMode !== "idle" || !pendingPuzzleRewardClaim) return;
+    setClaimMode("ad");
+    setClaimNotice(null);
+    const result = await requestRewardedAd("puzzle_result_double");
+    if (result.status !== "rewarded") {
+      setClaimMode("idle");
+      setClaimNotice(noticeForAdResult(result));
       return;
     }
-    startFresh();
-    setResultOpen(false);
-    setResultPayload(null);
-    setResultShowRetry(false);
-    appliedRef.current = false;
-    gameOverResultShownRef.current = false;
-  }, [consumeHeart, startFresh]);
-
-  const dismissResultOnly = useCallback(() => {
-    setResultOpen(false);
-    setResultPayload(null);
-  }, []);
+    claimCurrentPuzzleReward(true);
+  }, [claimCurrentPuzzleReward, claimMode, noticeForAdResult, pendingPuzzleRewardClaim]);
 
   const onDirection = useCallback(
     (dir: Direction) => {
@@ -298,10 +362,10 @@ export function PuzzleScreen() {
       <SessionResultModal
         open={resultOpen}
         payload={resultPayload}
-        showRetry={resultShowRetry}
-        onConfirmLobby={confirmLobbyFromResult}
-        onRetry={resultShowRetry ? retryFromResult : undefined}
-        onDismiss={!resultShowRetry ? dismissResultOnly : undefined}
+        claimMode={claimMode}
+        notice={claimNotice}
+        onClaimBase={claimBaseReward}
+        onClaimDouble={claimDoubleReward}
       />
 
       <AnimatePresence>

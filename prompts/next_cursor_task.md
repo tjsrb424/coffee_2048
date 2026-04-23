@@ -2,7 +2,7 @@
 
 ## 이번 세션 목표
 
-**`docs/release_scope_1_0.md`로 1.0 출시선이 고정된 현재 상태를 기준으로, 다음 세션에서는 새 기능 추가 대신 1.0 출시 전 필수 QA 또는 비출시 표면 정리 1개만 좁게 다룬다.**
+**`docs/release_scope_1_0.md`로 1.0 출시선이 고정되고, `오프라인 보상 x2` / `퍼즐 결과 x2(코인+원두만)` 최소 BM과 web 1.0용 `GPT + GAM rewarded` adapter 경로까지 실제 구현된 현재 상태를 기준으로, 다음 세션에서는 BM을 넓히지 말고 1.0 출시 전 필수 QA 또는 ad ops 안정화 1개만 좁게 다룬다.**
 
 추가 전제:
 
@@ -14,9 +14,10 @@
 
 1. `docs/codex_4th_pass_handoff.md`
 2. `docs/release_scope_1_0.md`
-3. `docs/figma_ui_swap_plan.md`
-4. `docs/14_cursor_handoff_update.md`
-5. `docs/11_lobby_interaction_direction.md`
+3. `docs/gam_web_rewarded_setup.md`
+4. `docs/figma_ui_swap_plan.md`
+5. `docs/14_cursor_handoff_update.md`
+6. `docs/11_lobby_interaction_direction.md`
 
 위 문서를 기준으로 현재 코드베이스를 분석한다.
 
@@ -42,9 +43,14 @@
 - 메타 저장 persistence 회귀
 - 손님 판매 write path 회귀
 - 오프라인 보상 1차 baseline
+- 오프라인 보상 x2 최소 BM 구현 + claim/reload 회귀
 - 성장 구조 밸런스 2차
 - 중반 해금 인지 UX 최소 보강
 - 퍼즐 -> 보상 -> 로비 자원 반영 -> 로스팅/제작/진열/판매 -> 새로고침 유지 핵심 루프 Playwright baseline
+- 퍼즐 결과 x2 최소 BM 구현 + `코인 + 원두만` 2배 정책 고정
+- `requestRewardedAd(placement)` adapter 뒤에 `mock`, `web-gpt-rewarded`, `unsupported fallback` 분기 도입
+- web 1.0용 `GPT + GAM rewarded` 연결 구조 + env/config 주입 경로 반영
+- dev/debug provider override + mock outcome 토글
 - 1.0 출시선 문서 고정
 - `/shop` / `pass` / `liveOps` / placeholder BM 노출 정리
 
@@ -64,10 +70,11 @@
 
 1. `docs/codex_4th_pass_handoff.md`
 2. `docs/release_scope_1_0.md`
-3. `docs/figma_ui_swap_plan.md`
-4. `docs/14_cursor_handoff_update.md`
-5. `docs/11_lobby_interaction_direction.md`
-6. `docs/09_cursor_workflow.md`
+3. `docs/gam_web_rewarded_setup.md`
+4. `docs/figma_ui_swap_plan.md`
+5. `docs/14_cursor_handoff_update.md`
+6. `docs/11_lobby_interaction_direction.md`
+7. `docs/09_cursor_workflow.md`
 
 필요 시 참고:
 - `docs/08_dev_roadmap.md`
@@ -100,7 +107,7 @@
 
 - 게임의 큰 방향 자체를 바꾸는 리라이트
 - 로비를 직접 이동형 구조로 되돌리기
-- BM 실구현
+- BM 범위 확장
 - 대형 핵심손님 확장
 - 주문 시스템 신규 구현
 - 특별 원두 대형 기능 구현
@@ -139,6 +146,7 @@
 - 핵심 루프 QA 자동화 또는 재현 절차 추가
 - 이미 정리한 비출시 표면(`/shop`, `pass/liveOps`, placeholder BM`)이 다시 과노출되지 않도록 유지
 - `오프라인 보상 x2`, `퍼즐 결과 x2(코인+원두만)` 규칙을 해치지 않는 최소 정리
+- reward claim 중복 수령 방지 / 새로고침 안정성 / mock 경로를 깨지 않는 범위만 다룰 것
 - Figma 교체 전에 필요한 최소 셸 분리 또는 test anchor 유지 정리
 - 구조 리라이트 없이 Playwright에서 고정 가능한 범위만 다룰 것
 
@@ -176,6 +184,9 @@
 - 손님 메타 v1(대표 손님 / 선호 보너스 / 단골 / 스토리 / day-boundary) 유지 확인
 - 오프라인 보상 `90분 / 50%` 값이 성장 곡선을 과도하게 밀지 않는지 확인
 - `퍼즐 결과 x2`를 붙이더라도 코인 + 원두 외 메타 진척이 늘어나지 않는지 확인
+- `offline_reward_double`, `puzzle_result_double` 외 placement를 새로 열지 않았는지 확인
+- 광고 mock 성공/취소/에러/노필/미지원에서 claim 상태가 꼬이지 않는지 확인
+- web rewarded success / cancelled / no_fill / unsupported fallback에서 기본 보상 경로가 유지되는지 확인
 
 ---
 
@@ -194,4 +205,6 @@
 
 - 시간대 레시피 구매 -> 제작 -> 판매 -> 새로고침 유지 QA 1건 추가
 - 손님 day-boundary UI 결합 회귀 1건 보강
-- `오프라인 보상 x2`, `퍼즐 결과 x2(코인+원두만)` 최소 QA 또는 명세 고정
+- `docs/gam_web_rewarded_setup.md` 기준 실 ad unit / line item 운영 점검 1회
+- web rewarded 지원 환경/노필 비율 QA 1건 추가
+- 1.1 앱 패키징 시 `src/lib/ads/rewardedAds.ts` 교체 포인트를 모바일 SDK 기준으로 분리 문서화

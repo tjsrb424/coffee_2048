@@ -389,6 +389,19 @@ export const koMessages = {
   "offlineSales.note": "오프라인 판매 1차 버전이라 판매 수익 일부만 차분히 정산해요.",
   "offlineSales.ready": "받을 코인",
   "offlineSales.claim": "보상 받기",
+  "offlineSales.claimDouble": "광고 보고 2배",
+  "offlineSales.claiming": "받는 중...",
+  "offlineSales.adClaiming": "광고 확인 중...",
+  "offlineSales.doubleNote": "광고 x2는 이번 오프라인 코인 정산에만 1회 적용돼요.",
+  "offlineSales.adCancelled":
+    "광고 보상을 끝까지 받지 못했어요. 기본 보상은 바로 받을 수 있어요.",
+  "offlineSales.adUnavailable":
+    "광고를 지금 준비하지 못했어요. 잠시 뒤 다시 시도해 주세요.",
+  "offlineSales.adNoFill":
+    "지금은 볼 수 있는 광고가 없어요. 기본 보상은 바로 받을 수 있어요.",
+  "offlineSales.adUnsupported":
+    "이 환경에서는 보상형 광고를 지원하지 않아요. 기본 보상은 바로 받을 수 있어요.",
+  "offlineSales.claimed": "이미 정산된 보상이에요.",
 
   "sellPulse.heading": "카운터 소식",
   "sellPulse.lineOffline":

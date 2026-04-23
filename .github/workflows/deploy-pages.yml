@@ -36,6 +36,11 @@ jobs:
           NEXT_PUBLIC_BASE_PATH: "/coffe_2048"
           NEXT_PUBLIC_ASSET_VERSION: ${{ github.sha }}
           NEXT_PUBLIC_ENABLE_DEV_DEBUG: "true"
+          NEXT_PUBLIC_REWARDED_AD_PROVIDER: "web-gpt-rewarded"
+          NEXT_PUBLIC_GAM_REWARDED_OFFLINE_AD_UNIT_PATH: "/23350518234/rewarded_offline_double"
+          NEXT_PUBLIC_GAM_REWARDED_PUZZLE_AD_UNIT_PATH: "/23350518234/rewarded_puzzle_double"
+          NEXT_PUBLIC_GAM_REWARDED_SCRIPT_URL: "https://securepubads.g.doubleclick.net/tag/js/gpt.js"
+          NEXT_PUBLIC_REWARDED_AD_REQUEST_TIMEOUT_MS: "8000"
         run: npm run build
 
       - name: Verify exported audio assets

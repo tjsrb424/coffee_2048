@@ -182,6 +182,41 @@ BM은 1.0에서 **아주 좁게** 고정한다.
 - 미션 / 손님 / 도감 / 해금 / 시간대 메타 진척은 배수 대상이 아님
 - 별도 상점 화면이나 pass/liveOps 화면을 1.0 BM 표면처럼 열어 두지 않음
 
+### 5-7. 현재 최소 BM 구현 메모
+현재 레포 기준 1.0 최소 BM 실구현은 아래처럼 좁게 고정한다.
+
+- 보상형 광고 placement는 아래 2종만 지원한다.
+  - `offline_reward_double`
+  - `puzzle_result_double`
+- 오프라인 보상 x2
+  - 로비 `오프라인 보상` 카드에서만 제공
+  - `보상 받기`와 `광고 보고 2배`를 분리
+  - pending claim은 persisted `claimId` 기준으로 1회만 정산
+- 퍼즐 결과 x2
+  - 퍼즐 결과 모달에서만 제공
+  - `기본 받기`와 `광고 보고 코인+원두 x2`를 분리
+  - 2배 적용 대상은 **코인 + 원두만**
+  - 하트 / 미션 / 손님 / 도감 / 해금 / 시간대 메타 진척은 그대로 유지
+- 저장/중복 방지
+  - 오프라인 보상과 퍼즐 결과 모두 claim 전후를 저장 기준으로 원자적으로 갱신
+  - claim 완료 시 pending 상태를 즉시 비워 새로고침 뒤 재수령을 막음
+  - async 광고 응답은 pending `claimId`가 현재 상태와 일치할 때만 반영
+- 광고 추상화
+  - 실제 SDK 직접 의존 대신 `requestRewardedAd(placement)` adapter를 사용
+  - web 1.0의 실제 provider 1차 연결은 `Google Publisher Tag + Google Ad Manager rewarded` 기준으로 설계한다
+  - provider는 `mock`, `web-gpt-rewarded`, `unsupported fallback` 3갈래를 최소 지원한다
+  - 결과 상태는 `rewarded`, `cancelled`, `error`, `no_fill`, `unsupported`를 구분한다
+  - 실제 ad unit path는 하드코딩하지 않고 아래 env로 주입한다
+    - `NEXT_PUBLIC_REWARDED_AD_PROVIDER`
+    - `NEXT_PUBLIC_GAM_REWARDED_OFFLINE_AD_UNIT_PATH`
+    - `NEXT_PUBLIC_GAM_REWARDED_PUZZLE_AD_UNIT_PATH`
+    - `NEXT_PUBLIC_GAM_REWARDED_SCRIPT_URL`
+    - `NEXT_PUBLIC_REWARDED_AD_REQUEST_TIMEOUT_MS`
+  - dev에서는 mock fallback이 기본이고, dev/debug 경로에서 provider override와 mock 결과를 바꿔 QA할 수 있다
+  - web rewarded가 지원되지 않거나 fill이 없으면 기본 보상 경로는 유지하고 UI는 fallback notice만 보여준다
+  - reward callback이 와도 즉시 자원 지급하지 않고, 기존 store claim 함수가 최종 지급 권한을 가진다
+  - 이후 1.1에서 앱 패키징 + 모바일 광고 SDK로 넘어갈 때도 교체 포인트는 계속 `src/lib/ads/rewardedAds.ts`다
+
 ---
 
 ## 6. 출시 전 필수 QA
@@ -226,6 +261,7 @@ BM은 1.0에서 **아주 좁게** 고정한다.
 - 퍼즐 결과 x2는 코인 + 원두만 2배 적용
 - 미션/도감/손님/시간대 메타가 광고 배수로 늘어나지 않음
 - 광고 미시청 시 기본 보상 루프가 깨지지 않음
+- web rewarded `unsupported` / `no_fill` / `cancelled` / `error`에서 claim pending과 기본 보상 경로가 유지됨
 
 ### 6-7. 플랫폼/출시 품질
 - production build 통과

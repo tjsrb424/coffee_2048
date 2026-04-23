@@ -166,7 +166,11 @@ export function buildDebugSaveBundle(
       entries: {},
       purchasedTimeRecipeIds: [],
     },
-    meta: { lastHeartRegenAtMs: nowMs, lastSeenAtMs: nowMs },
+    meta: {
+      lastHeartRegenAtMs: nowMs,
+      lastSeenAtMs: nowMs,
+      pendingPuzzleRewardClaim: null,
+    },
     settings: {
       soundOn: false,
       vibrationOn: false,
@@ -253,6 +257,9 @@ export function buildDebugSaveBundle(
       meta: {
         ...baseApp.meta,
         ...appPatch.meta,
+        pendingPuzzleRewardClaim:
+          (appPatch.meta?.pendingPuzzleRewardClaim as AppPersistState["meta"]["pendingPuzzleRewardClaim"] | undefined) ??
+          baseApp.meta.pendingPuzzleRewardClaim,
       },
       settings: {
         ...baseApp.settings,

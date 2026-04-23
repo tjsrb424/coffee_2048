@@ -9,6 +9,13 @@ import { CoinIcon } from "@/components/ui/CoinIcon";
 import { EspressoShotIcon } from "@/components/ui/EspressoShotIcon";
 import { HeartIcon } from "@/components/ui/HeartIcon";
 import { useGameFeedback } from "@/hooks/useGameFeedback";
+import {
+  getRewardedAdMockBehavior,
+  getRewardedAdProviderModeOverride,
+  getRewardedAdRuntimeDebugInfo,
+  setRewardedAdMockBehavior,
+  setRewardedAdProviderModeOverride,
+} from "@/lib/ads/rewardedAds";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/useAppStore";
 import { useCustomerStore } from "@/stores/useCustomerStore";
@@ -44,6 +51,12 @@ export function DevDebugPanel({ className }: { className?: string }) {
   const [open, setOpen] = useState(false);
   const [jsonText, setJsonText] = useState("");
   const [status, setStatus] = useState<string | null>(null);
+  const [adMockBehavior, setAdMockBehavior] = useState(() =>
+    getRewardedAdMockBehavior(),
+  );
+  const [adProviderOverride, setAdProviderOverride] = useState(() =>
+    getRewardedAdProviderModeOverride(),
+  );
 
   const title = useMemo(() => "DEV", []);
 
@@ -269,6 +282,80 @@ export function DevDebugPanel({ className }: { className?: string }) {
                 >
                   -6
                 </Button>
+              </div>
+            </div>
+
+            <div className="rounded-2xl bg-coffee-900/5 px-3 py-3 ring-1 ring-coffee-600/10">
+              <div className="text-xs font-semibold text-coffee-700">
+                보상형 광고 provider
+              </div>
+              <p className="mt-1 text-[11px] leading-relaxed text-coffee-600/80">
+                현재 override:{" "}
+                <span className="font-semibold">{adProviderOverride ?? "없음(auto)"}</span>
+              </p>
+              <p className="mt-1 text-[11px] leading-relaxed text-coffee-600/80">
+                현재 resolved:{" "}
+                <span className="font-semibold">
+                  {getRewardedAdRuntimeDebugInfo().resolvedProviderMode}
+                </span>
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {(["mock", "web-gpt-rewarded", "unsupported"] as const).map((mode) => (
+                  <Button
+                    key={mode}
+                    type="button"
+                    variant={adProviderOverride === mode ? "soft" : "ghost"}
+                    className="min-h-[36px] px-3 text-xs"
+                    onClick={() => {
+                      lightTap();
+                      setRewardedAdProviderModeOverride(mode);
+                      setAdProviderOverride(mode);
+                      setStatus(`보상형 광고 provider override를 '${mode}'로 바꿨어요.`);
+                    }}
+                  >
+                    {mode}
+                  </Button>
+                ))}
+                <Button
+                  type="button"
+                  variant={adProviderOverride === null ? "soft" : "ghost"}
+                  className="min-h-[36px] px-3 text-xs"
+                  onClick={() => {
+                    lightTap();
+                    setRewardedAdProviderModeOverride(null);
+                    setAdProviderOverride(null);
+                    setStatus("보상형 광고 provider override를 지웠어요. (auto)");
+                  }}
+                >
+                  auto
+                </Button>
+              </div>
+            </div>
+
+            <div className="rounded-2xl bg-coffee-900/5 px-3 py-3 ring-1 ring-coffee-600/10">
+              <div className="text-xs font-semibold text-coffee-700">
+                보상형 광고 mock
+              </div>
+              <p className="mt-1 text-[11px] leading-relaxed text-coffee-600/80">
+                현재 mock 결과: <span className="font-semibold">{adMockBehavior}</span>
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {(["success", "cancel", "error", "no_fill", "unsupported"] as const).map((behavior) => (
+                  <Button
+                    key={behavior}
+                    type="button"
+                    variant={adMockBehavior === behavior ? "soft" : "ghost"}
+                    className="min-h-[36px] px-3 text-xs"
+                    onClick={() => {
+                      lightTap();
+                      setRewardedAdMockBehavior(behavior);
+                      setAdMockBehavior(behavior);
+                      setStatus(`보상형 광고 mock 결과를 '${behavior}'로 바꿨어요.`);
+                    }}
+                  >
+                    {behavior}
+                  </Button>
+                ))}
               </div>
             </div>
 

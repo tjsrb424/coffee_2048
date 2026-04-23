@@ -255,6 +255,27 @@ MVP에서는 아래만 써도 된다.
 
 초기에는 BM을 억지로 넣지 말고, 설계만 열어 둔다.
 
+현재 1.0 최소 실구현 기준은 예외적으로 아래 2개 보상형 광고만 좁게 둔다.
+
+- `offline_reward_double`
+- `puzzle_result_double`
+
+추가 정책:
+
+- 퍼즐 결과 x2는 **코인 + 원두만** 2배
+- 미션 / 손님 / 도감 / 해금 / 시간대 메타 진척은 배수하지 않음
+- 광고 연동은 실제 SDK 직결 대신 작은 adapter(`requestRewardedAd`) 뒤로 숨긴다
+- web 1.0의 실제 provider 1차는 `Google Publisher Tag + Google Ad Manager rewarded` 기준으로 연결한다
+- env/config는 아래처럼 주입한다
+  - `NEXT_PUBLIC_REWARDED_AD_PROVIDER`
+  - `NEXT_PUBLIC_GAM_REWARDED_OFFLINE_AD_UNIT_PATH`
+  - `NEXT_PUBLIC_GAM_REWARDED_PUZZLE_AD_UNIT_PATH`
+  - `NEXT_PUBLIC_GAM_REWARDED_SCRIPT_URL`
+  - `NEXT_PUBLIC_REWARDED_AD_REQUEST_TIMEOUT_MS`
+- web provider 결과는 `rewarded`, `cancelled`, `error`, `no_fill`, `unsupported`를 구분한다
+- dev에서는 mock fallback이 기본이며 provider override + mock outcome으로 QA한다
+- 이후 1.1 앱 패키징 + 모바일 광고 SDK 연결 시 교체 포인트는 계속 `src/lib/ads/rewardedAds.ts`
+
 권장 MVP 수준:
 - 광고 제거 패키지 설계만 고려
 - 1~2개 꾸미기 팩 구조만 문서화

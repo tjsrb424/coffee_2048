@@ -45,7 +45,10 @@ import {
   recomputeCafeLevel,
   upgradeCost,
 } from "@/features/meta/balance/cafeModifiers";
-import { computePuzzleRewards } from "@/features/meta/rewards/computePuzzleRewards";
+import {
+  computePuzzleRewards,
+  type PuzzleRewards,
+} from "@/features/meta/rewards/computePuzzleRewards";
 import { simulateOfflineCafeReward } from "@/features/meta/rewards/offlineCafeReward";
 import {
   applyMissionEvent,
@@ -74,6 +77,7 @@ import type {
   MetaRuntimeState,
   MissionEvent,
   PendingOfflineReward,
+  PendingPuzzleRewardClaim,
   PassProgressState,
   PlayerResources,
   PuzzleProgress,
@@ -128,6 +132,7 @@ const defaultSettings: SettingsState = {
 const defaultMeta: MetaRuntimeState = {
   lastHeartRegenAtMs: 0,
   lastSeenAtMs: 0,
+  pendingPuzzleRewardClaim: null,
 };
 
 const defaultBm: BmEntitlementsState = {
@@ -180,6 +185,12 @@ export type AppStore = AppPersistState & {
     highestTile: number;
     mergeCount?: number;
   }) => void;
+  /** 퍼즐 결과를 저장 가능한 pending claim으로 만든다 */
+  preparePuzzleRewardClaim: (input: {
+    score: number;
+    highestTile: number;
+    mergeCount?: number;
+  }) => PendingPuzzleRewardClaim;
   /** 미션 공통 이벤트 디스패처 */
   recordMissionEvent: (
     input: MissionEvent | MissionEvent[],
@@ -210,7 +221,23 @@ export type AppStore = AppPersistState & {
     soldCount: number;
   }) => void;
   settleOfflineReward: (nowMs?: number) => PendingOfflineReward | null;
-  claimOfflineReward: (nowMs?: number) => PendingOfflineReward | null;
+  claimOfflineReward: (input?: {
+    nowMs?: number;
+    claimId?: string;
+    doubled?: boolean;
+  }) => PendingOfflineReward | null;
+  claimPuzzleReward: (input?: {
+    nowMs?: number;
+    claimId?: string;
+    doubled?: boolean;
+  }) => {
+    claimId: string;
+    score: number;
+    highestTile: number;
+    mergeCount: number;
+    rewards: PuzzleRewards;
+    doubled: boolean;
+  } | null;
   markLastSeenAt: (nowMs?: number) => void;
   purchaseCafeUpgrade: (track: CafeUpgradeTrack) => boolean;
   /** 개발자 디버그: 자원 수치 강제 조정 */
@@ -250,6 +277,10 @@ function normalizeTimestampMs(value: unknown): number {
     : 0;
 }
 
+function buildClaimId(prefix: string, parts: Array<string | number>): string {
+  return [prefix, ...parts.map((part) => String(part))].join("-");
+}
+
 function normalizePendingOfflineReward(
   input: unknown,
 ): PendingOfflineReward | null {
@@ -259,10 +290,86 @@ function normalizePendingOfflineReward(
   const soldCount = normalizeTimestampMs(raw.soldCount);
   if (pendingCoins <= 0 || soldCount <= 0) return null;
   return {
+    claimId:
+      typeof raw.claimId === "string" && raw.claimId.length > 0
+        ? raw.claimId
+        : buildClaimId("offline", [
+            normalizeTimestampMs(raw.generatedAtMs),
+            soldCount,
+            pendingCoins,
+          ]),
     generatedAtMs: normalizeTimestampMs(raw.generatedAtMs),
     elapsedMs: normalizeTimestampMs(raw.elapsedMs),
     soldCount,
     pendingCoins,
+  };
+}
+
+function normalizePendingPuzzleRewardClaim(
+  input: unknown,
+): PendingPuzzleRewardClaim | null {
+  if (!input || typeof input !== "object") return null;
+  const raw = input as Partial<PendingPuzzleRewardClaim>;
+  const score = normalizeTimestampMs(raw.score);
+  const highestTile = normalizeTimestampMs(raw.highestTile);
+  const mergeCount = normalizeTimestampMs(raw.mergeCount);
+  const baseCoins = normalizeTimestampMs(raw.baseCoins);
+  const baseBeans = normalizeTimestampMs(raw.baseBeans);
+  const baseHearts = normalizeTimestampMs(raw.baseHearts);
+  if (score <= 0 && highestTile <= 0) return null;
+  return {
+    claimId:
+      typeof raw.claimId === "string" && raw.claimId.length > 0
+        ? raw.claimId
+        : buildClaimId("puzzle", [
+            normalizeTimestampMs(raw.generatedAtMs),
+            score,
+            highestTile,
+            mergeCount,
+          ]),
+    generatedAtMs: normalizeTimestampMs(raw.generatedAtMs),
+    score,
+    highestTile,
+    mergeCount,
+    baseCoins,
+    baseBeans,
+    baseHearts,
+  };
+}
+
+function buildPendingPuzzleRewardClaim(input: {
+  score: number;
+  highestTile: number;
+  mergeCount?: number;
+  nowMs?: number;
+}): PendingPuzzleRewardClaim {
+  const generatedAtMs = normalizeTimestampMs(input.nowMs ?? Date.now());
+  const rewards = computePuzzleRewards(input.score, input.highestTile);
+  return {
+    claimId: buildClaimId("puzzle", [
+      generatedAtMs,
+      input.score,
+      input.highestTile,
+      input.mergeCount ?? 0,
+    ]),
+    generatedAtMs,
+    score: Math.max(0, Math.floor(input.score)),
+    highestTile: Math.max(0, Math.floor(input.highestTile)),
+    mergeCount: Math.max(0, Math.floor(input.mergeCount ?? 0)),
+    baseCoins: rewards.coins,
+    baseBeans: rewards.beans,
+    baseHearts: rewards.hearts,
+  };
+}
+
+function puzzleRewardsForClaim(
+  claim: PendingPuzzleRewardClaim,
+  doubled: boolean,
+): PuzzleRewards {
+  return {
+    coins: claim.baseCoins * (doubled ? 2 : 1),
+    beans: claim.baseBeans * (doubled ? 2 : 1),
+    hearts: claim.baseHearts,
   };
 }
 
@@ -327,6 +434,7 @@ function applyOfflineRewardHydration(next: AppStore): AppStore {
       displaySellingActive: remainingStock > 0,
       lastAutoSellAtMs: now,
       pendingOfflineReward: {
+        claimId: buildClaimId("offline", [now, reward.soldCount, reward.pendingCoins]),
         generatedAtMs: now,
         elapsedMs: reward.cappedElapsedMs,
         soldCount: reward.soldCount,
@@ -401,6 +509,11 @@ function mergePersisted(persisted: unknown, current: AppStore): AppStore {
         p.meta?.lastSeenAtMs ??
           current.meta.lastSeenAtMs ??
           defaultMeta.lastSeenAtMs,
+      ),
+      pendingPuzzleRewardClaim: normalizePendingPuzzleRewardClaim(
+        p.meta?.pendingPuzzleRewardClaim ??
+          current.meta.pendingPuzzleRewardClaim ??
+          defaultMeta.pendingPuzzleRewardClaim,
       ),
     },
     settings: {
@@ -509,6 +622,9 @@ function migratePersistedState(persisted: unknown): unknown {
       ...(state.meta ?? {}),
       lastHeartRegenAtMs: normalizeTimestampMs(state.meta?.lastHeartRegenAtMs),
       lastSeenAtMs: normalizeTimestampMs(state.meta?.lastSeenAtMs),
+      pendingPuzzleRewardClaim: normalizePendingPuzzleRewardClaim(
+        state.meta?.pendingPuzzleRewardClaim,
+      ),
     },
   };
 }
@@ -545,36 +661,29 @@ export const useAppStore = create<AppStore>()(
         return results;
       },
       applyPuzzleRunOutcome: ({ score, highestTile, mergeCount = 0 }) => {
-        const rewards = computePuzzleRewards(score, highestTile);
-        const prev = get();
-        const nextBestScore = Math.max(prev.puzzleProgress.bestScore, score);
-        const nextBestTile = Math.max(prev.puzzleProgress.bestTile, highestTile);
-        set({
-          playerResources: {
-            coins: prev.playerResources.coins + rewards.coins,
-            beans: prev.playerResources.beans + rewards.beans,
-            hearts: prev.playerResources.hearts + rewards.hearts,
-          },
-          puzzleProgress: {
-            bestScore: nextBestScore,
-            bestTile: nextBestTile,
-            lastRunScore: score,
-            lastRunTile: highestTile,
-            lastRunCoins: rewards.coins,
-            lastRunBeans: rewards.beans,
-            lastRunHearts: rewards.hearts,
-            totalRuns: prev.puzzleProgress.totalRuns + 1,
-          },
-        });
-        get().recordMissionEvent({
-          type: "puzzleRunCompleted",
+        const claim = get().preparePuzzleRewardClaim({
           score,
           highestTile,
           mergeCount,
-          coins: rewards.coins,
-          beans: rewards.beans,
-          hearts: rewards.hearts,
         });
+        get().claimPuzzleReward({ claimId: claim.claimId });
+      },
+      preparePuzzleRewardClaim: ({ score, highestTile, mergeCount = 0 }) => {
+        const prev = get();
+        const current = prev.meta.pendingPuzzleRewardClaim;
+        if (current) return current;
+        const claim = buildPendingPuzzleRewardClaim({
+          score,
+          highestTile,
+          mergeCount,
+        });
+        set({
+          meta: {
+            ...prev.meta,
+            pendingPuzzleRewardClaim: claim,
+          },
+        });
+        return claim;
       },
       patchSettings: (patch) =>
         set((s) => ({ settings: { ...s.settings, ...patch } })),
@@ -991,6 +1100,7 @@ export const useAppStore = create<AppStore>()(
         }
 
         const pendingReward: PendingOfflineReward = {
+          claimId: buildClaimId("offline", [now, reward.soldCount, reward.pendingCoins]),
           generatedAtMs: now,
           elapsedMs: reward.cappedElapsedMs,
           soldCount: reward.soldCount,
@@ -1014,22 +1124,25 @@ export const useAppStore = create<AppStore>()(
 
         return pendingReward;
       },
-      claimOfflineReward: (nowMs) => {
-        const now = normalizeTimestampMs(nowMs ?? Date.now());
+      claimOfflineReward: (input) => {
+        const now = normalizeTimestampMs(input?.nowMs ?? Date.now());
         const prev = get();
         const reward = prev.cafeState.pendingOfflineReward;
         if (!reward || reward.pendingCoins <= 0) return null;
+        if (input?.claimId && reward.claimId !== input.claimId) return null;
+        const doubled = input?.doubled === true;
+        const claimedCoins = reward.pendingCoins * (doubled ? 2 : 1);
 
         set({
           playerResources: {
             ...prev.playerResources,
-            coins: prev.playerResources.coins + reward.pendingCoins,
+            coins: prev.playerResources.coins + claimedCoins,
           },
           cafeState: {
             ...prev.cafeState,
             pendingOfflineReward: null,
             lastOfflineSaleAtMs: now,
-            lastOfflineSaleCoins: reward.pendingCoins,
+            lastOfflineSaleCoins: claimedCoins,
             lastOfflineSaleSoldCount: reward.soldCount,
           },
           meta: {
@@ -1044,7 +1157,63 @@ export const useAppStore = create<AppStore>()(
           source: "sale",
         });
 
-        return reward;
+        return {
+          ...reward,
+          pendingCoins: claimedCoins,
+        };
+      },
+      claimPuzzleReward: (input) => {
+        const now = normalizeTimestampMs(input?.nowMs ?? Date.now());
+        const prev = get();
+        const claim = prev.meta.pendingPuzzleRewardClaim;
+        if (!claim) return null;
+        if (input?.claimId && claim.claimId !== input.claimId) return null;
+        const doubled = input?.doubled === true;
+        const rewards = puzzleRewardsForClaim(claim, doubled);
+        const nextBestScore = Math.max(prev.puzzleProgress.bestScore, claim.score);
+        const nextBestTile = Math.max(prev.puzzleProgress.bestTile, claim.highestTile);
+
+        set({
+          playerResources: {
+            coins: prev.playerResources.coins + rewards.coins,
+            beans: prev.playerResources.beans + rewards.beans,
+            hearts: prev.playerResources.hearts + rewards.hearts,
+          },
+          puzzleProgress: {
+            bestScore: nextBestScore,
+            bestTile: nextBestTile,
+            lastRunScore: claim.score,
+            lastRunTile: claim.highestTile,
+            lastRunCoins: rewards.coins,
+            lastRunBeans: rewards.beans,
+            lastRunHearts: rewards.hearts,
+            totalRuns: prev.puzzleProgress.totalRuns + 1,
+          },
+          meta: {
+            ...prev.meta,
+            pendingPuzzleRewardClaim: null,
+            lastSeenAtMs: now,
+          },
+        });
+
+        get().recordMissionEvent({
+          type: "puzzleRunCompleted",
+          score: claim.score,
+          highestTile: claim.highestTile,
+          mergeCount: claim.mergeCount,
+          coins: claim.baseCoins,
+          beans: claim.baseBeans,
+          hearts: claim.baseHearts,
+        });
+
+        return {
+          claimId: claim.claimId,
+          score: claim.score,
+          highestTile: claim.highestTile,
+          mergeCount: claim.mergeCount,
+          rewards,
+          doubled,
+        };
       },
       markLastSeenAt: (nowMs) => {
         const now = normalizeTimestampMs(nowMs ?? Date.now());

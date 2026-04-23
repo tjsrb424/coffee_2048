@@ -19,6 +19,24 @@
 
 이번 세션에서 현재 상태 기준으로 추가 반영된 파일은 아래다.
 
+### 0-1-a. 최신 BM 최소 구현 반영 파일
+- `src/lib/ads/rewardedAds.ts`
+- `src/stores/useAppStore.ts`
+- `src/features/meta/types/gameState.ts`
+- `src/features/meta/storage/storageKeys.ts`
+- `src/features/lobby/components/OfflineSalesCard.tsx`
+- `src/features/puzzle2048/components/PuzzleScreen.tsx`
+- `src/features/puzzle2048/components/SessionResultModal.tsx`
+- `src/components/dev/DevDebugPanel.tsx`
+- `locale/messages/ko.ts`
+- `tests/visual/rewarded-ad-claims.spec.ts`
+- `tests/visual/web-gpt-rewarded.spec.ts`
+- `tests/visual/ownershipTestUtils.ts`
+- `docs/release_scope_1_0.md`
+- `docs/gam_web_rewarded_setup.md`
+- `docs/codex_4th_pass_handoff.md`
+- `prompts/next_cursor_task.md`
+
 - `src/features/lobby/components/LobbyScreen.tsx`
 - `src/features/settings/components/SettingsHubScreen.tsx`
 - `src/features/shop/components/ShopPlaceholderScreen.tsx`
@@ -44,6 +62,22 @@
 - `prompts/next_cursor_task.md`
 
 핵심 반영 내용:
+- 이번 세션에서는 1.0 최소 BM 실구현으로 `오프라인 보상 x2`, `퍼즐 결과 x2` 2개만 실제 동작하도록 연결했다.
+- 광고 보상은 실제 SDK에 직접 묶지 않고 `src/lib/ads/rewardedAds.ts`의 작은 adapter(`requestRewardedAd(placement)`) 뒤로 숨겼다.
+- 현재 adapter는 `mock`, `web-gpt-rewarded`, `unsupported fallback`을 분기하고 placement는 `offline_reward_double`, `puzzle_result_double` 두 개만 지원한다.
+- web 1.0 실제 provider 1차는 `Google Publisher Tag + Google Ad Manager rewarded` 기준으로 연결했다.
+- 실제 ad unit path는 하드코딩하지 않고 `NEXT_PUBLIC_REWARDED_AD_PROVIDER`, `NEXT_PUBLIC_GAM_REWARDED_OFFLINE_AD_UNIT_PATH`, `NEXT_PUBLIC_GAM_REWARDED_PUZZLE_AD_UNIT_PATH`, `NEXT_PUBLIC_GAM_REWARDED_SCRIPT_URL`, `NEXT_PUBLIC_REWARDED_AD_REQUEST_TIMEOUT_MS`로 주입한다.
+- 오프라인 보상 x2는 `OfflineSalesCard`의 pending claim에 `claimId`를 붙여 `보상 받기` / `광고 보고 2배`를 분리했고, claim 완료 시 pending을 즉시 비워 중복 수령과 새로고침 중복을 막는다.
+- 퍼즐 결과는 persisted `pendingPuzzleRewardClaim`을 추가해 결과 모달 claim을 저장 기준으로 다루도록 바꿨다. 새로고침 뒤에도 pending claim이 남아 있으면 다시 결과 모달을 열 수 있다.
+- 퍼즐 결과 x2는 **코인 + 원두만** 2배로 처리하고, 하트 / 미션 / 손님 / 도감 / 해금 / 시간대 메타 진척은 배수하지 않는다.
+- 퍼즐 결과 claim 시 `puzzleProgress.lastRunCoins/Beans`는 실제 지급량을 기록하지만, mission event에는 base reward만 전달해 미션 진행도가 광고 배수로 늘어나지 않게 고정했다.
+- adapter 결과 상태는 `rewarded`, `cancelled`, `error`, `no_fill`, `unsupported`를 구분하고, UI는 provider 종류를 모른 채 notice만 분기한다.
+- web rewarded가 지원되지 않거나 fill이 없으면 claim은 진행하지 않고 pending을 유지한 채 기본 보상 경로로 되돌린다.
+- dev/debug 경로에서는 provider override(`mock / web-gpt-rewarded / unsupported / auto`)와 mock 결과(`success / cancel / error / no_fill / unsupported`)를 바꿔 QA할 수 있게 했다.
+- `tests/visual/rewarded-ad-claims.spec.ts`를 추가해 아래 2가지를 고정했다.
+  - 오프라인 보상: 기본 수령 / 광고 2배 수령이 각각 1회만 가능하고 새로고침 뒤에도 중복 수령되지 않음
+  - 퍼즐 결과: 광고 x2에서 코인 / 원두만 차이 나고 다른 메타 진척은 동일함
+- `tests/visual/web-gpt-rewarded.spec.ts`를 추가해 fake `googletag`로 web provider 경로의 success / cancelled / no_fill / unsupported fallback을 고정했다.
 - 이번 세션에서는 1.0 범위 밖인 `/shop`, `pass/liveOps`, placeholder BM 표면이 일반 유저에게 1.0 기능처럼 보이지 않도록 노출 정책을 실제 UI에 반영했다.
 - 로비 상단 메뉴와 설정 화면에서 `/shop` 직접 진입을 제거하고, `/shop` route 자체는 QA/direct route 용 **비출시 데모 보관함**으로만 남겼다.
 - `/shop` 화면은 `오프라인 보상 x2`, `퍼즐 결과 x2(코인+원두만)`만 1.0 BM 범위라는 점을 명시하고, 광고 제거 / 스타터 팩 / 테마 / 꾸미기 표면은 `출시 후 예정`으로 비활성화했다.
@@ -80,6 +114,7 @@ Cursor는 이 문서 **하나만 읽으면 안 된다.**
 ### 1-1. 현재 레포에서 실제로 함께 봐야 하는 방향 문서
 - `docs/figma_ui_swap_plan.md`
 - `docs/release_scope_1_0.md`
+- `docs/gam_web_rewarded_setup.md`
 - `prompts/next_cursor_task.md`
 - `docs/14_cursor_handoff_update.md`
 - `docs/11_lobby_interaction_direction.md`
@@ -167,7 +202,7 @@ Cursor는 코드를 수정하기 전에 아래를 먼저 확인해야 한다.
 - 메인 저장은 `src/stores/useAppStore.ts`의 Zustand `persist`에 붙어 있다.
 - 메인 키/버전은 `src/features/meta/storage/storageKeys.ts`에서 관리한다.
   - `STORAGE_KEY = "coffee-2048-save-v2"`
-  - `SAVE_SCHEMA_VERSION = 4`
+  - `SAVE_SCHEMA_VERSION = 5`
 - 메인 저장 병합/보정은 `mergePersisted`, `migratePersistedState`에서 처리한다.
 - 손님 애정도/스토리 저장은 별도다.
   - `src/stores/useCustomerStore.ts`
@@ -328,7 +363,7 @@ Cursor는 바로 구현부터 들어가지 말고 아래 순서로 시작해야 
 - [x] codex state 저장됨 (`beverageCodex`)
 - [x] 시간대 레시피 제작/판매 결과 저장됨 (`cafeState.menuStock`, `cafeState.craftedDrinkIds`, `beverageCodex.entries`)
 - [x] equipped skin 저장됨 (`cosmetics`)
-- [x] save version 존재함 (메인 3 / 손님 6)
+- [x] save version 존재함 (메인 5 / 손님 6)
 - [x] migration 처리 존재함 (`migratePersistedState`, `useCustomerStore.migrate`)
 
 ### UI 체크
@@ -375,6 +410,12 @@ Cursor는 바로 구현부터 들어가지 말고 아래 순서로 시작해야 
 - [x] 마지막 접속 시각(`meta.lastSeenAtMs`) 기반 오프라인 보상 1차 구현 완료
 - [x] 복귀 시 메인 로비 오프라인 보상 카드 노출 및 수령 흐름 구현 완료
 - [x] 오프라인 보상 pending/claim/persistence 회귀 추가 완료 (`tests/visual/meta-persistence.spec.ts`)
+- [x] 오프라인 보상 x2 최소 BM 구현 완료: `보상 받기` / `광고 보고 2배` 분리, `claimId` 기반 중복 방지, 새로고침 후 재수령 방지
+- [x] 퍼즐 결과 x2 최소 BM 구현 완료: persisted `pendingPuzzleRewardClaim`, `기본 받기` / `광고 보고 코인+원두 x2` 분리, 코인/원두만 2배 적용
+- [x] 보상형 광고 adapter를 `mock`에서 실제 web `GPT + GAM rewarded` 경로까지 확장 완료 (`src/lib/ads/rewardedAds.ts`)
+- [x] 보상형 광고 provider override + mock/debug 토글 추가 완료 (`src/components/dev/DevDebugPanel.tsx`)
+- [x] BM 최소 QA 회귀 추가 완료 (`tests/visual/rewarded-ad-claims.spec.ts`)
+- [x] web rewarded provider path 회귀 추가 완료 (`tests/visual/web-gpt-rewarded.spec.ts`)
 - [x] 성장 구조 밸런스 2차 완료: 미션 목표치 / 초반 레시피 가격 / 시간대 메뉴 해금 레벨 / 재료 가격 / 업그레이드 비용 / 오프라인 보상 비율 재조정
 - [x] 중반 해금 인지 UX 최소 보강 완료: 성장 카드 다음 해금 preview, 로비 상점의 떠돌이 판매상 한 줄 안내, 시간대 상점의 `새로 열림 / 지금 추천 / 다음에 열림` 배지 추가
 - [x] 중반 해금 인지 UX 회귀 추가 완료 (`tests/visual/recipe-ownership.spec.ts`)
@@ -385,7 +426,8 @@ Cursor는 바로 구현부터 들어가지 말고 아래 순서로 시작해야 
 - [x] 로비/상점/카운터/쇼케이스/HUD/바텀시트는 외형 교체 대상이지만, route / action / test id / source of truth는 유지 대상으로 분리했다
 - [x] `/shop`은 일반 진입점에서 숨기고, direct route에서는 비출시 데모 보관함으로만 남겼다
 - [x] `passProgress`, `liveOps`는 저장 슬롯 중심이고 보상 규칙은 후속이며, 현재 UI에서도 출시 후 예정 메모 수준으로만 노출한다
-- [x] 1.0 BM 범위는 문서상 `오프라인 보상 x2`, `퍼즐 결과 x2(코인+원두만)`으로 고정했고, 나머지 BM 확장은 1.1 이후로 넘기기로 결정했다
+- [x] 1.0 BM 최소 실구현 완료: `오프라인 보상 x2`, `퍼즐 결과 x2(코인+원두만)`이 실제 claim/store/새로고침 기준으로 동작한다
+- [x] web 1.0 실제 rewarded ad 연결 1차 완료: `requestRewardedAd(placement)` 뒤에서 `web-gpt-rewarded`와 fallback이 동작한다
 - [x] `테마 스킨`, `이펙트 스킨`은 1.0 포함 기능이 아니라 1.1 후보로 문서상 분리했다
 - [x] 시간대 레시피 구매 ownership은 여전히 `beverageCodex.purchasedTimeRecipeIds`에 별도 저장됨
 - [x] 레벨/미션/스킨/손님 저장 persistence baseline은 `tests/visual/meta-persistence.spec.ts`로 고정됐음
@@ -423,7 +465,7 @@ Cursor는 바로 구현부터 들어가지 말고 아래 순서로 시작해야 
 
 ### 10-1. 세이브 스키마 충돌
 - 메인 저장과 손님 저장이 물리적으로 분리되어 있어, 이후 스키마 변경 시 두 store를 함께 고려해야 함
-- `STORAGE_KEY` 문자열은 `v2`인데 실제 schema version은 `3`이라 이름상 혼선이 있음
+- `STORAGE_KEY` 문자열은 `v2`인데 실제 schema version은 `5`라 이름상 혼선이 있음
 
 ### 10-2. 상태 source of truth 중복
 - 표준 레시피는 `accountLevel`, 시간대 레시피는 `beverageCodex.purchasedTimeRecipeIds`에 저장되어 기준이 분리돼 있음
@@ -455,6 +497,11 @@ Cursor는 바로 구현부터 들어가지 말고 아래 순서로 시작해야 
 - 현재 UI는 기능 셸과 최종 비주얼이 일부 컴포넌트 안에서 섞여 있어, Figma 교체 시 `useAppStore` 직접 참조 / 텍스트 기반 테스트 / 하드코딩된 일러스트 패딩이 결합 포인트가 될 수 있다
 - 이번 세션의 안내는 의도적으로 얇은 카드/배지 레이어만 추가한 상태라, 성장 카드를 열지 않는 유저에게도 `다음 해금`이 충분히 보이는지는 실제 플레이 감각을 한 번 더 볼 필요가 있다
 - Playwright 타깃 회귀는 데스크톱 기준으로 통과했지만, 모바일 프로젝트에서는 간헐적인 `webServer` 접속 거절 플래키가 한 번 관측돼 CI 환경에서는 분리 확인이 필요하다
+
+### 10-8. web rewarded ad ops 리스크
+- 현재 레포는 GPT + GAM rewarded 연결 구조와 fallback 정책까지 닫혔지만, 실제 fill rate와 수익화는 ad unit / line item / inventory 설정 품질에 크게 좌우된다
+- web rewarded는 지원 환경 제약이 있어 일부 브라우저/기기에서는 `unsupported`가 정상 동작일 수 있다
+- 1.1에서 앱 패키징 + 모바일 SDK로 갈 때는 provider만 교체하면 되지만, claim/store 정책과 placement 2개는 유지하는 편이 안전하다
 
 ---
 
@@ -525,7 +572,7 @@ Figma 교체 전 셸 분리: `docs/figma_ui_swap_plan.md` 기준으로 HUD / 바
 이 문서는 단독 기준 문서가 아니다.
 
 - 현재 레포에 없는 `coffee_2048_project_handoff_master.md`를 전제로 읽으면 혼란이 생긴다.
-- 실제 작업 기준은 `docs/figma_ui_swap_plan.md`, `docs/release_scope_1_0.md`, `prompts/next_cursor_task.md`, `docs/14_cursor_handoff_update.md`, `docs/11_lobby_interaction_direction.md`, 그리고 이 문서다.
+- 실제 작업 기준은 `docs/figma_ui_swap_plan.md`, `docs/release_scope_1_0.md`, `docs/gam_web_rewarded_setup.md`, `prompts/next_cursor_task.md`, `docs/14_cursor_handoff_update.md`, `docs/11_lobby_interaction_direction.md`, 그리고 이 문서다.
 
 이번 단계의 핵심은,
 

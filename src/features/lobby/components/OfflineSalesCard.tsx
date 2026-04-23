@@ -1,9 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import { CoinIcon } from "@/components/ui/CoinIcon";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { useGameFeedback } from "@/hooks/useGameFeedback";
+import {
+  type RewardedAdResult,
+  requestRewardedAd,
+} from "@/lib/ads/rewardedAds";
 import { cn } from "@/lib/utils";
 import { t } from "@/locale/i18n";
 import { useAppStore } from "@/stores/useAppStore";
@@ -22,7 +27,43 @@ export function OfflineSalesCard({ className }: { className?: string }) {
   const pendingReward = useAppStore((s) => s.cafeState.pendingOfflineReward);
   const claimOfflineReward = useAppStore((s) => s.claimOfflineReward);
   const { lightTap } = useGameFeedback();
+  const [claimMode, setClaimMode] = useState<"idle" | "base" | "ad">("idle");
+  const [notice, setNotice] = useState<string | null>(null);
   if (!pendingReward || pendingReward.pendingCoins <= 0) return null;
+
+  const isBusy = claimMode !== "idle";
+
+  const handleClaim = (doubled: boolean) => {
+    const claimed = claimOfflineReward({
+      claimId: pendingReward.claimId,
+      doubled,
+    });
+    if (!claimed) {
+      setNotice(t("offlineSales.claimed"));
+      setClaimMode("idle");
+      return;
+    }
+    useLobbyFxStore.getState().pingPurchase("offline");
+    useLobbyFxStore.getState().pingCafeSell({
+      gainedCoins: claimed.pendingCoins,
+      soldCount: claimed.soldCount,
+      kind: "offline",
+    });
+  };
+
+  const noticeForResult = (result: RewardedAdResult): string => {
+    switch (result.status) {
+      case "cancelled":
+        return t("offlineSales.adCancelled");
+      case "no_fill":
+        return t("offlineSales.adNoFill");
+      case "unsupported":
+        return t("offlineSales.adUnsupported");
+      case "error":
+      default:
+        return t("offlineSales.adUnavailable");
+    }
+  };
 
   return (
     <Card className={cn("p-4", className)}>
@@ -53,24 +94,52 @@ export function OfflineSalesCard({ className }: { className?: string }) {
         </div>
       </div>
       <div className="mt-3">
-        <Button
-          type="button"
-          variant="soft"
-          className="h-11 w-full text-xs font-semibold"
-          onClick={() => {
-            lightTap();
-            const claimed = claimOfflineReward();
-            if (!claimed) return;
-            useLobbyFxStore.getState().pingPurchase("offline");
-            useLobbyFxStore.getState().pingCafeSell({
-              gainedCoins: claimed.pendingCoins,
-              soldCount: claimed.soldCount,
-              kind: "offline",
-            });
-          }}
-        >
-          {t("offlineSales.claim")}
-        </Button>
+        <div className="grid gap-2 sm:grid-cols-2">
+          <Button
+            type="button"
+            variant="soft"
+            className="h-11 text-xs font-semibold"
+            disabled={isBusy}
+            onClick={() => {
+              lightTap();
+              setNotice(null);
+              setClaimMode("base");
+              handleClaim(false);
+            }}
+          >
+            {claimMode === "base" ? t("offlineSales.claiming") : t("offlineSales.claim")}
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            className="h-11 text-xs font-semibold"
+            disabled={isBusy}
+            onClick={async () => {
+              lightTap();
+              setNotice(null);
+              setClaimMode("ad");
+              const result = await requestRewardedAd("offline_reward_double");
+              if (result.status !== "rewarded") {
+                setClaimMode("idle");
+                setNotice(noticeForResult(result));
+                return;
+              }
+              handleClaim(true);
+            }}
+          >
+            {claimMode === "ad"
+              ? t("offlineSales.adClaiming")
+              : t("offlineSales.claimDouble")}
+          </Button>
+        </div>
+        <p className="mt-2 text-[11px] leading-relaxed text-coffee-600/75">
+          {t("offlineSales.doubleNote")}
+        </p>
+        {notice ? (
+          <p className="mt-2 text-[11px] leading-relaxed text-coffee-700">
+            {notice}
+          </p>
+        ) : null}
       </div>
     </Card>
   );

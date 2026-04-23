@@ -21,20 +21,19 @@ export type SessionResultPayload = {
 type Props = {
   open: boolean;
   payload: SessionResultPayload | null;
-  showRetry: boolean;
-  onConfirmLobby: () => void;
-  onRetry?: () => void;
-  /** 나가기로 연 경우, 로비 없이 모달만 닫기 */
-  onDismiss?: () => void;
+  claimMode: "idle" | "base" | "ad";
+  notice?: string | null;
+  onClaimBase: () => void;
+  onClaimDouble: () => void;
 };
 
 export function SessionResultModal({
   open,
   payload,
-  showRetry,
-  onConfirmLobby,
-  onRetry,
-  onDismiss,
+  claimMode,
+  notice,
+  onClaimBase,
+  onClaimDouble,
 }: Props) {
   const goalMet = payload ? isSessionGoalMet(payload.highestTile) : false;
   const showHeartReward = !!payload && payload.rewards.hearts > 0;
@@ -136,23 +135,29 @@ export function SessionResultModal({
             </div>
 
             <p className="mt-3 text-xs leading-relaxed text-coffee-600/85">
-              로비 HUD로 보상이 흘러 들어가요.
+              광고 x2는 코인과 원두만 2배예요. 하트와 다른 메타 진척은 그대로예요.
             </p>
 
-            <div className="mt-5 flex flex-col gap-2">
-              <Button type="button" onClick={onConfirmLobby}>
-                로비로
+            {notice ? (
+              <p className="mt-3 text-xs leading-relaxed text-coffee-700">{notice}</p>
+            ) : null}
+
+            <div className="mt-5 grid gap-2">
+              <Button
+                type="button"
+                disabled={claimMode !== "idle"}
+                onClick={onClaimBase}
+              >
+                {claimMode === "base" ? "받는 중..." : "기본 받기"}
               </Button>
-              {showRetry && onRetry && (
-                <Button type="button" variant="ghost" onClick={onRetry}>
-                  다시 하기
-                </Button>
-              )}
-              {!showRetry && onDismiss && (
-                <Button type="button" variant="ghost" onClick={onDismiss}>
-                  닫고 계속
-                </Button>
-              )}
+              <Button
+                type="button"
+                variant="ghost"
+                disabled={claimMode !== "idle"}
+                onClick={onClaimDouble}
+              >
+                {claimMode === "ad" ? "광고 확인 중..." : "광고 보고 코인+원두 x2"}
+              </Button>
             </div>
           </motion.div>
         </motion.div>
