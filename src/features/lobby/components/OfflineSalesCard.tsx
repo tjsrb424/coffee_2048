@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { useGameFeedback } from "@/hooks/useGameFeedback";
 import {
+  getRewardedAdAvailability,
   type RewardedAdResult,
   requestRewardedAd,
 } from "@/lib/ads/rewardedAds";
@@ -23,10 +24,6 @@ function formatOfflineDuration(elapsedMs: number): string {
   return `${hours}시간 ${minutes}분`;
 }
 
-function rewardedAdStatusLabel(result: RewardedAdResult): string {
-  return `${result.provider}:${result.status}`;
-}
-
 export function OfflineSalesCard({ className }: { className?: string }) {
   const pendingReward = useAppStore((s) => s.cafeState.pendingOfflineReward);
   const claimOfflineReward = useAppStore((s) => s.claimOfflineReward);
@@ -35,6 +32,8 @@ export function OfflineSalesCard({ className }: { className?: string }) {
   const [notice, setNotice] = useState<string | null>(null);
   if (!pendingReward || pendingReward.pendingCoins <= 0) return null;
 
+  const adAvailability = getRewardedAdAvailability("offline_reward_double");
+  const adSupported = adAvailability.isSupported;
   const isBusy = claimMode !== "idle";
 
   const handleClaim = (doubled: boolean) => {
@@ -58,16 +57,16 @@ export function OfflineSalesCard({ className }: { className?: string }) {
   const noticeForResult = (result: RewardedAdResult): string => {
     switch (result.status) {
       case "cancelled":
-        return `${t("offlineSales.adCancelled")} (${rewardedAdStatusLabel(result)})`;
+        return t("offlineSales.adCancelled");
       case "timeout":
-        return `${t("offlineSales.adTimeout")} (${rewardedAdStatusLabel(result)})`;
+        return t("offlineSales.adTimeout");
       case "no_fill":
-        return `${t("offlineSales.adNoFill")} (${rewardedAdStatusLabel(result)})`;
+        return t("offlineSales.adNoFill");
       case "unsupported":
-        return `${t("offlineSales.adUnsupported")} (${rewardedAdStatusLabel(result)})`;
+        return t("offlineSales.adUnsupported");
       case "error":
       default:
-        return `${t("offlineSales.adUnavailable")} (${rewardedAdStatusLabel(result)})`;
+        return t("offlineSales.adUnavailable");
     }
   };
 
@@ -119,9 +118,14 @@ export function OfflineSalesCard({ className }: { className?: string }) {
             type="button"
             variant="ghost"
             className="h-11 text-xs font-semibold"
-            disabled={isBusy}
+            disabled={isBusy || !adSupported}
             onClick={async () => {
               lightTap();
+              if (!adSupported) {
+                setClaimMode("idle");
+                setNotice(t("offlineSales.adUnsupported"));
+                return;
+              }
               setNotice(null);
               setClaimMode("ad");
               const result = await requestRewardedAd("offline_reward_double");
@@ -135,11 +139,15 @@ export function OfflineSalesCard({ className }: { className?: string }) {
           >
             {claimMode === "ad"
               ? t("offlineSales.adClaiming")
-              : t("offlineSales.claimDouble")}
+              : adSupported
+                ? t("offlineSales.claimDouble")
+                : t("offlineSales.claimDoubleUnsupported")}
           </Button>
         </div>
         <p className="mt-2 text-[11px] leading-relaxed text-coffee-600/75">
-          {t("offlineSales.doubleNote")}
+          {adSupported
+            ? t("offlineSales.doubleNote")
+            : t("offlineSales.doubleNoteUnsupported")}
         </p>
         {notice ? (
           <p className="mt-2 text-[11px] leading-relaxed text-coffee-700">

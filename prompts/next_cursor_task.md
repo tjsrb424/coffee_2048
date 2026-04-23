@@ -50,6 +50,7 @@
 - 퍼즐 결과 x2 최소 BM 구현 + `코인 + 원두만` 2배 정책 고정
 - `requestRewardedAd(placement)` adapter 뒤에 `mock`, `web-gpt-rewarded`, `unsupported fallback` 분기 도입
 - web 1.0용 `GPT + GAM rewarded` 연결 구조 + env/config 주입 경로 반영
+- 현재 웹 테스트 환경에서 `web-gpt-rewarded` override가 실제로 `unsupported`로 끝날 수 있는 상태를 확인했고, 퍼즐 결과/오프라인 보상 UI는 이를 명확한 비지원 UX로 정리해 둔 상태
 - dev/debug provider override + mock outcome 토글
 - 1.0 출시선 문서 고정
 - `/shop` / `pass` / `liveOps` / placeholder BM 노출 정리
@@ -146,6 +147,7 @@
 - 핵심 루프 QA 자동화 또는 재현 절차 추가
 - 이미 정리한 비출시 표면(`/shop`, `pass/liveOps`, placeholder BM`)이 다시 과노출되지 않도록 유지
 - `오프라인 보상 x2`, `퍼즐 결과 x2(코인+원두만)` 규칙을 해치지 않는 최소 정리
+- rewarded ad `unsupported`는 새로운 BM 확장 없이 명확한 실패/비지원 경로로만 유지할 것
 - reward claim 중복 수령 방지 / 새로고침 안정성 / mock 경로를 깨지 않는 범위만 다룰 것
 - Figma 교체 전에 필요한 최소 셸 분리 또는 test anchor 유지 정리
 - 구조 리라이트 없이 Playwright에서 고정 가능한 범위만 다룰 것
@@ -187,6 +189,7 @@
 - `offline_reward_double`, `puzzle_result_double` 외 placement를 새로 열지 않았는지 확인
 - 광고 mock 성공/취소/에러/노필/미지원에서 claim 상태가 꼬이지 않는지 확인
 - web rewarded success / cancelled / no_fill / unsupported fallback에서 기본 보상 경로가 유지되는지 확인
+- `unsupported`가 한 번 확인된 placement에서는 CTA가 다시 적극 노출되지 않고 비활성/안내 상태로 유지되는지 확인
 
 ---
 

@@ -33,6 +33,15 @@ export type RewardedAdAttemptSnapshot = RewardedAdResult & {
   finishedAtMs: number;
 };
 
+export type RewardedAdAvailability = {
+  placement: RewardedAdPlacement;
+  isSupported: boolean;
+  providerMode: RewardedAdProviderMode;
+  provider: RewardedAdProvider;
+  source: "config" | "last_result";
+  details?: string;
+};
+
 export interface RewardedAdAdapter {
   requestRewardedAd(placement: RewardedAdPlacement): Promise<RewardedAdResult>;
 }
@@ -365,6 +374,14 @@ function recordRewardedAdAttempt(snapshot: RewardedAdAttemptSnapshot) {
   }
 }
 
+function providerFromResolvedMode(
+  providerMode: RewardedAdProviderMode,
+): RewardedAdProvider {
+  if (providerMode === "mock") return "mock";
+  if (providerMode === "web-gpt-rewarded") return "web-gpt-rewarded";
+  return "unsupported";
+}
+
 class MockRewardedAdAdapter implements RewardedAdAdapter {
   async requestRewardedAd(
     placement: RewardedAdPlacement,
@@ -634,6 +651,63 @@ export function setRewardedAdProviderModeOverride(
 
 export function getRewardedAdRuntimeDebugInfo() {
   return readRuntimeConfig();
+}
+
+export function getRewardedAdAvailability(
+  placement: RewardedAdPlacement,
+): RewardedAdAvailability {
+  const config = readRuntimeConfig();
+  const provider = providerFromResolvedMode(config.resolvedProviderMode);
+
+  if (config.resolvedProviderMode === "unsupported") {
+    return {
+      placement,
+      isSupported: false,
+      providerMode: config.resolvedProviderMode,
+      provider,
+      source: "config",
+      details: "rewarded ads are not configured for this environment",
+    };
+  }
+
+  if (
+    config.resolvedProviderMode === "web-gpt-rewarded" &&
+    !config.adUnitPaths[placement]
+  ) {
+    return {
+      placement,
+      isSupported: false,
+      providerMode: config.resolvedProviderMode,
+      provider,
+      source: "config",
+      details: "missing GAM rewarded ad unit path",
+    };
+  }
+
+  const lastAttempt = getLastRewardedAdAttempt();
+  if (
+    lastAttempt?.placement === placement &&
+    lastAttempt.status === "unsupported" &&
+    (lastAttempt.provider === "web-gpt-rewarded" ||
+      lastAttempt.provider === "unsupported")
+  ) {
+    return {
+      placement,
+      isSupported: false,
+      providerMode: config.resolvedProviderMode,
+      provider: lastAttempt.provider,
+      source: "last_result",
+      details: lastAttempt.details,
+    };
+  }
+
+  return {
+    placement,
+    isSupported: true,
+    providerMode: config.resolvedProviderMode,
+    provider,
+    source: "config",
+  };
 }
 
 export function getLastRewardedAdAttempt():

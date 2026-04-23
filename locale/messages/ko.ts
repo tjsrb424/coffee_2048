@@ -390,9 +390,12 @@ export const koMessages = {
   "offlineSales.ready": "받을 코인",
   "offlineSales.claim": "보상 받기",
   "offlineSales.claimDouble": "광고 보고 2배",
+  "offlineSales.claimDoubleUnsupported": "광고 2배 사용 불가",
   "offlineSales.claiming": "받는 중...",
   "offlineSales.adClaiming": "광고 확인 중...",
   "offlineSales.doubleNote": "광고 x2는 이번 오프라인 코인 정산에만 1회 적용돼요.",
+  "offlineSales.doubleNoteUnsupported":
+    "이 환경에서는 광고 2배를 사용할 수 없어요. 기본 보상은 바로 받을 수 있어요.",
   "offlineSales.adCancelled":
     "광고 보상을 끝까지 받지 못했어요. 기본 보상은 바로 받을 수 있어요.",
   "offlineSales.adUnavailable":

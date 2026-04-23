@@ -8,7 +8,8 @@ import { Button } from "@/components/ui/Button";
 import { HeartIcon } from "@/components/ui/HeartIcon";
 import { useGameFeedback } from "@/hooks/useGameFeedback";
 import {
-  type RewardedAdResult,
+  getRewardedAdAvailability,
+  type RewardedAdStatus,
   requestRewardedAd,
 } from "@/lib/ads/rewardedAds";
 import { runSceneTransition } from "@/lib/runSceneTransition";
@@ -48,10 +49,6 @@ function payloadFromPendingClaim(
   };
 }
 
-function rewardedAdStatusLabel(result: RewardedAdResult): string {
-  return `${result.provider}:${result.status}`;
-}
-
 export function PuzzleScreen() {
   const router = useRouter();
   const startFresh = usePuzzleSessionStore((s) => s.startFresh);
@@ -78,20 +75,24 @@ export function PuzzleScreen() {
     ? payloadFromPendingClaim(pendingPuzzleRewardClaim)
     : null;
   const resultOpen = !!resultPayload;
+  const puzzleRewardAdAvailability = getRewardedAdAvailability(
+    "puzzle_result_double",
+  );
+  const puzzleRewardAdSupported = puzzleRewardAdAvailability.isSupported;
 
-  const noticeForAdResult = useCallback((result: RewardedAdResult) => {
-    switch (result.status) {
+  const noticeForAdResult = useCallback((status: RewardedAdStatus) => {
+    switch (status) {
       case "cancelled":
-        return `광고 보상을 끝까지 받지 못했어요. 기본 보상은 바로 받을 수 있어요. (${rewardedAdStatusLabel(result)})`;
+        return "광고 보상을 끝까지 받지 못했어요. 기본 보상은 바로 받을 수 있어요.";
       case "timeout":
-        return `광고 응답이 시간 안에 끝나지 않았어요. 잠시 뒤 다시 시도하거나 기본 보상을 받아주세요. (${rewardedAdStatusLabel(result)})`;
+        return "광고 응답이 시간 안에 끝나지 않았어요. 잠시 뒤 다시 시도하거나 기본 보상을 받아주세요.";
       case "no_fill":
-        return `지금은 볼 수 있는 광고가 없어요. 기본 보상은 바로 받을 수 있어요. (${rewardedAdStatusLabel(result)})`;
+        return "지금은 볼 수 있는 광고가 없어요. 기본 보상은 바로 받을 수 있어요.";
       case "unsupported":
-        return `이 환경에서는 보상형 광고를 지원하지 않아요. 기본 보상은 바로 받을 수 있어요. (${rewardedAdStatusLabel(result)})`;
+        return "이 환경에서는 보상형 광고를 지원하지 않아요. 기본 보상은 바로 받을 수 있어요.";
       case "error":
       default:
-        return `광고를 지금 준비하지 못했어요. 잠시 뒤 다시 시도해 주세요. (${rewardedAdStatusLabel(result)})`;
+        return "광고를 지금 준비하지 못했어요. 잠시 뒤 다시 시도해 주세요.";
     }
   }, []);
 
@@ -199,12 +200,17 @@ export function PuzzleScreen() {
 
   const claimDoubleReward = useCallback(async () => {
     if (claimMode !== "idle" || !pendingPuzzleRewardClaim) return;
+    if (!getRewardedAdAvailability("puzzle_result_double").isSupported) {
+      setClaimMode("idle");
+      setClaimNotice(noticeForAdResult("unsupported"));
+      return;
+    }
     setClaimMode("ad");
     setClaimNotice(null);
     const result = await requestRewardedAd("puzzle_result_double");
     if (result.status !== "rewarded") {
       setClaimMode("idle");
-      setClaimNotice(noticeForAdResult(result));
+      setClaimNotice(noticeForAdResult(result.status));
       return;
     }
     claimCurrentPuzzleReward(true);
@@ -368,6 +374,7 @@ export function PuzzleScreen() {
       <SessionResultModal
         open={resultOpen}
         payload={resultPayload}
+        adSupported={puzzleRewardAdSupported}
         claimMode={claimMode}
         notice={claimNotice}
         onClaimBase={claimBaseReward}

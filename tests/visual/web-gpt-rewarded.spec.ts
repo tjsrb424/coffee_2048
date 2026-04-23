@@ -325,10 +325,22 @@ test("web GPT no fill and unsupported fallback keep reward unclaimed", async ({
   await expect(
     unsupportedDialog.getByText("이 환경에서는 보상형 광고를 지원하지 않아요. 기본 보상은 바로 받을 수 있어요."),
   ).toBeVisible();
+  await expect(
+    unsupportedDialog.getByRole("button", { name: "광고 x2 사용 불가" }),
+  ).toBeDisabled();
   await expect(unsupportedPage).toHaveURL(/\/puzzle\/?$/);
   await unsupportedPage.reload();
+  const unsupportedDialogAfterReload = unsupportedPage.getByRole("dialog", {
+    name: "수고했어요",
+  });
+  await expect(unsupportedDialogAfterReload).toBeVisible();
   await expect(
-    unsupportedPage.getByRole("dialog", { name: "수고했어요" }),
+    unsupportedDialogAfterReload.getByRole("button", { name: "광고 x2 사용 불가" }),
+  ).toBeDisabled();
+  await expect(
+    unsupportedDialogAfterReload.getByText(
+      "이 환경에서는 광고 x2를 사용할 수 없어요. 기본 보상으로 진행해 주세요.",
+    ),
   ).toBeVisible();
   await unsupportedPage.close();
 });

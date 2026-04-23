@@ -21,6 +21,7 @@ export type SessionResultPayload = {
 type Props = {
   open: boolean;
   payload: SessionResultPayload | null;
+  adSupported: boolean;
   claimMode: "idle" | "base" | "ad";
   notice?: string | null;
   onClaimBase: () => void;
@@ -30,6 +31,7 @@ type Props = {
 export function SessionResultModal({
   open,
   payload,
+  adSupported,
   claimMode,
   notice,
   onClaimBase,
@@ -135,7 +137,9 @@ export function SessionResultModal({
             </div>
 
             <p className="mt-3 text-xs leading-relaxed text-coffee-600/85">
-              광고 x2는 코인과 원두만 2배예요. 하트와 다른 메타 진척은 그대로예요.
+              {adSupported
+                ? "광고 x2는 코인과 원두만 2배예요. 하트와 다른 메타 진척은 그대로예요."
+                : "이 환경에서는 광고 x2를 사용할 수 없어요. 기본 보상으로 진행해 주세요."}
             </p>
 
             {notice ? (
@@ -153,10 +157,14 @@ export function SessionResultModal({
               <Button
                 type="button"
                 variant="ghost"
-                disabled={claimMode !== "idle"}
+                disabled={claimMode !== "idle" || !adSupported}
                 onClick={onClaimDouble}
               >
-                {claimMode === "ad" ? "광고 확인 중..." : "광고 보고 코인+원두 x2"}
+                {claimMode === "ad"
+                  ? "광고 확인 중..."
+                  : adSupported
+                    ? "광고 보고 코인+원두 x2"
+                    : "광고 x2 사용 불가"}
               </Button>
             </div>
           </motion.div>

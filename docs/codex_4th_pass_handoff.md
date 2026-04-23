@@ -73,6 +73,10 @@
 - 퍼즐 결과 claim 시 `puzzleProgress.lastRunCoins/Beans`는 실제 지급량을 기록하지만, mission event에는 base reward만 전달해 미션 진행도가 광고 배수로 늘어나지 않게 고정했다.
 - adapter 결과 상태는 `rewarded`, `cancelled`, `error`, `no_fill`, `unsupported`를 구분하고, UI는 provider 종류를 모른 채 notice만 분기한다.
 - web rewarded가 지원되지 않거나 fill이 없으면 claim은 진행하지 않고 pending을 유지한 채 기본 보상 경로로 되돌린다.
+- `src/lib/ads/rewardedAds.ts`에는 placement별 `getRewardedAdAvailability()` helper를 추가해, config상 이미 `unsupported`이거나 같은 placement에서 `unsupported`가 한 번 확인된 뒤에는 UI가 광고 CTA를 계속 적극 노출하지 않도록 정리했다.
+- 현재 웹 테스트 환경에서는 provider를 `web-gpt-rewarded`로 강제해도 최종 결과가 `web-gpt-rewarded:unsupported`로 끝날 수 있으며, 이는 정상적인 지원 불가 케이스로 취급한다.
+- `SessionResultModal`과 `OfflineSalesCard`는 같은 정책을 따른다. 즉 광고 가능 환경에서는 기존 x2 CTA를 유지하고, `unsupported` 환경에서는 짧은 안내 문구 + 비활성화 CTA로 정리한다.
+- 일반 유저용 notice에서는 `provider:status` 꼬리를 제거했고, 원인 식별은 `DevDebugPanel`의 마지막 광고 시도/세부 detail로 유지한다.
 - dev/debug 경로에서는 provider override(`mock / web-gpt-rewarded / unsupported / auto`)와 mock 결과(`success / cancel / error / no_fill / unsupported`)를 바꿔 QA할 수 있게 했다.
 - `tests/visual/rewarded-ad-claims.spec.ts`를 추가해 아래 2가지를 고정했다.
   - 오프라인 보상: 기본 수령 / 광고 2배 수령이 각각 1회만 가능하고 새로고침 뒤에도 중복 수령되지 않음
@@ -416,6 +420,7 @@ Cursor는 바로 구현부터 들어가지 말고 아래 순서로 시작해야 
 - [x] 보상형 광고 provider override + mock/debug 토글 추가 완료 (`src/components/dev/DevDebugPanel.tsx`)
 - [x] BM 최소 QA 회귀 추가 완료 (`tests/visual/rewarded-ad-claims.spec.ts`)
 - [x] web rewarded provider path 회귀 추가 완료 (`tests/visual/web-gpt-rewarded.spec.ts`)
+- [x] `unsupported` 환경 UX 정리 완료: 퍼즐 결과 모달 / 오프라인 보상 카드 모두 광고 CTA를 같은 정책으로 비활성화하고, 기존 `광고 확인 중... -> 다시 버튼` 혼란을 줄이는 안내 흐름으로 정리
 - [x] 성장 구조 밸런스 2차 완료: 미션 목표치 / 초반 레시피 가격 / 시간대 메뉴 해금 레벨 / 재료 가격 / 업그레이드 비용 / 오프라인 보상 비율 재조정
 - [x] 중반 해금 인지 UX 최소 보강 완료: 성장 카드 다음 해금 preview, 로비 상점의 떠돌이 판매상 한 줄 안내, 시간대 상점의 `새로 열림 / 지금 추천 / 다음에 열림` 배지 추가
 - [x] 중반 해금 인지 UX 회귀 추가 완료 (`tests/visual/recipe-ownership.spec.ts`)
@@ -428,6 +433,7 @@ Cursor는 바로 구현부터 들어가지 말고 아래 순서로 시작해야 
 - [x] `passProgress`, `liveOps`는 저장 슬롯 중심이고 보상 규칙은 후속이며, 현재 UI에서도 출시 후 예정 메모 수준으로만 노출한다
 - [x] 1.0 BM 최소 실구현 완료: `오프라인 보상 x2`, `퍼즐 결과 x2(코인+원두만)`이 실제 claim/store/새로고침 기준으로 동작한다
 - [x] web 1.0 실제 rewarded ad 연결 1차 완료: `requestRewardedAd(placement)` 뒤에서 `web-gpt-rewarded`와 fallback이 동작한다
+- [x] 현재 웹 테스트 환경의 `web-gpt-rewarded:unsupported` 결과를 일반 사용자 UX에서 명확한 실패/비지원 경로로 취급하도록 정리했고, 두 placement 모두 동일 정책으로 노출한다
 - [x] `테마 스킨`, `이펙트 스킨`은 1.0 포함 기능이 아니라 1.1 후보로 문서상 분리했다
 - [x] 시간대 레시피 구매 ownership은 여전히 `beverageCodex.purchasedTimeRecipeIds`에 별도 저장됨
 - [x] 레벨/미션/스킨/손님 저장 persistence baseline은 `tests/visual/meta-persistence.spec.ts`로 고정됐음

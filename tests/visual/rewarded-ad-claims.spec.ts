@@ -35,6 +35,19 @@ async function seedBundle(
   await setMockAdOutcome(page, adOutcome);
 }
 
+async function forceUnsupportedProvider(page: Page) {
+  await page.evaluate(
+    ([providerStorageKey, lastResultStorageKey]) => {
+      window.localStorage.setItem(providerStorageKey, "unsupported");
+      window.localStorage.removeItem(lastResultStorageKey);
+    },
+    [
+      REWARDED_AD_PROVIDER_OVERRIDE_STORAGE_KEY,
+      REWARDED_AD_LAST_RESULT_STORAGE_KEY,
+    ] as const,
+  );
+}
+
 test.describe.configure({ mode: "serial" });
 
 function comparableMissionProgress(bundle: DebugSaveBundle) {
@@ -264,5 +277,97 @@ test("puzzle result double only changes coins and beans", async ({ page }) => {
     const afterReload = await exportDebugSaveBundle(page);
     expect(afterReload.app.playerResources).toEqual(adClaimState.app.playerResources);
     expect(afterReload.app.meta.pendingPuzzleRewardClaim).toBeNull();
+  });
+});
+
+test("unsupported rewarded UX disables ad CTA on offline and puzzle rewards", async ({
+  page,
+}) => {
+  test.setTimeout(120_000);
+  const nowMs = new Date(FIXED_TIME).getTime();
+  const offlineStartedAtMs = nowMs - 30 * 60 * 1000;
+
+  await installFixedClock(page, FIXED_TIME);
+  await page.emulateMedia({ reducedMotion: "reduce" });
+
+  await test.step("오프라인 보상 카드는 unsupported 상태를 바로 안내한다", async () => {
+    await importDebugSaveBundle(
+      page,
+      buildDebugSaveBundle({
+        nowMs,
+        app: {
+          playerResources: {
+            coins: 1_000,
+          },
+          cafeState: {
+            displaySellingActive: true,
+            lastAutoSellAtMs: offlineStartedAtMs,
+            menuStock: {
+              americano: 3,
+            },
+            pendingOfflineReward: null,
+          },
+          meta: {
+            lastHeartRegenAtMs: nowMs,
+            lastSeenAtMs: offlineStartedAtMs,
+          },
+        },
+      }),
+    );
+    await forceUnsupportedProvider(page);
+    await page.reload();
+
+    await expect(page.getByText("오프라인 보상")).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "광고 2배 사용 불가" }),
+    ).toBeDisabled();
+    await expect(
+      page.getByText(
+        "이 환경에서는 광고 2배를 사용할 수 없어요. 기본 보상은 바로 받을 수 있어요.",
+      ),
+    ).toBeVisible();
+  });
+
+  await test.step("퍼즐 결과 모달도 같은 정책으로 광고 CTA를 비활성화한다", async () => {
+    await importDebugSaveBundle(
+      page,
+      buildDebugSaveBundle({
+        nowMs,
+        app: {
+          playerResources: {
+            coins: 100,
+            beans: 40,
+            hearts: 2,
+          },
+          meta: {
+            lastHeartRegenAtMs: nowMs,
+            lastSeenAtMs: nowMs,
+            pendingPuzzleRewardClaim: {
+              claimId: `puzzle-${nowMs}-320-256-12-unsupported`,
+              generatedAtMs: nowMs,
+              score: 320,
+              highestTile: 256,
+              mergeCount: 12,
+              baseCoins: 32,
+              baseBeans: 8,
+              baseHearts: 1,
+            },
+          },
+        },
+      }),
+    );
+    await forceUnsupportedProvider(page);
+    await page.goto("/puzzle");
+
+    const resultDialog = page.getByRole("dialog", { name: "수고했어요" });
+    await expect(resultDialog).toBeVisible();
+    await expect(
+      resultDialog.getByRole("button", { name: "광고 x2 사용 불가" }),
+    ).toBeDisabled();
+    await expect(
+      resultDialog.getByText(
+        "이 환경에서는 광고 x2를 사용할 수 없어요. 기본 보상으로 진행해 주세요.",
+      ),
+    ).toBeVisible();
   });
 });
