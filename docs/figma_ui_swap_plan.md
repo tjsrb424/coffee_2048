@@ -215,6 +215,25 @@
 
 ## 8. 교체 우선순위
 
+### 0순위: 로비 1차 컷 반영 현황
+최근 패스 기준으로 아래는 **1차 외형 교체 완료** 상태다.
+
+- `src/features/lobby/components/LobbyScreen.tsx`
+  - `public/assets/lobby/lobby_bg_base.png` 배경 적용
+  - 상단 타이틀 로고 / 메뉴 버튼 / 플레이 버튼 교체
+  - `lobby_hud_ui.png` 프레임 위에 4개 메인 타일 asset 적용
+  - 기존 로스터 / 쇼케이스 / 카운터 / 상점 클릭 액션 유지
+- `src/features/lobby/components/ResourceBar.tsx`
+  - compact HUD를 `lobby_hud_currency_bar.png` 기반 셸로 교체
+- `src/features/lobby/components/AccountLevelCard.tsx`
+  - 레벨/티어 배지 베이스를 `lobby_btn_tier.png`로 교체
+
+이번 패스에서 **아직 안 바꾼 영역**:
+- 바텀시트 본문/헤더 전체 리디자인
+- `CafeLoopSection` 내부 카드 외형
+- `OfflineSalesCard`
+- 손님 힌트 카드 / 기타 세부 HUD polish
+
 ### 1순위: 공통 셸
 - `AppShell`
 - `ResourceBar`

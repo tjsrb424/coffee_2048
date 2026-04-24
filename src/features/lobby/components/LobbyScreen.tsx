@@ -6,13 +6,13 @@ import { useRouter } from "next/navigation";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import {
   Suspense,
+  type CSSProperties,
   useCallback,
   useEffect,
   useMemo,
   useRef,
   useState,
 } from "react";
-import { AppShell } from "@/components/layout/AppShell";
 import { Button } from "@/components/ui/Button";
 import { useResetDocumentScrollOnMount } from "@/hooks/useResetDocumentScrollOnMount";
 import type { LobbySheetId } from "@/features/lobby/config/lobbyHotspots";
@@ -46,6 +46,18 @@ import { ResourceBar } from "./ResourceBar";
 import { LobbyPanelQuerySync } from "./LobbyPanelQuerySync";
 import { AccountLevelCard } from "./AccountLevelCard";
 
+const LOBBY_BG_ASSET = publicAssetPath("/assets/lobby/lobby_bg_base.png");
+const LOBBY_TITLE_LOGO_ASSET = publicAssetPath("/assets/lobby/lobby_title_logo.png");
+const LOBBY_MENU_BUTTON_ASSET = publicAssetPath("/assets/lobby/lobby_btn_menu.png");
+const LOBBY_PLAY_BUTTON_ASSET = publicAssetPath("/assets/lobby/lobby_btn_play.png");
+const LOBBY_TILE_FRAME_ASSET = publicAssetPath("/assets/lobby/lobby_hud_ui.png");
+const LOBBY_ROASTER_TILE_ASSET = publicAssetPath("/assets/lobby/lobby_btn_roaster.png");
+const LOBBY_DRINK_TILE_ASSET = publicAssetPath("/assets/lobby/lobby_btn_drinkstation.png");
+const LOBBY_CASHIER_TILE_ASSET = publicAssetPath("/assets/lobby/lobby_btn_cashier.png");
+const LOBBY_SHOP_TILE_ASSET = publicAssetPath("/assets/lobby/lobby_btn_shop.png");
+const LOBBY_REFERENCE_OVERLAY_ASSET = publicAssetPath("/mock/lobby_reference.png");
+const LOBBY_OVERLAY_STORAGE_KEY = "coffee2048_lobby_overlay" as const;
+
 type OpenSheet = {
   sheet: LobbySheetId;
   cafeSections?: CafeLoopSectionKey[];
@@ -67,10 +79,25 @@ export function LobbyScreen() {
 
   const [open, setOpen] = useState<OpenSheet>(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [showLobbyOverlay, setShowLobbyOverlay] = useState(false);
+  const canUseOverlayToggle = process.env.NODE_ENV !== "production";
 
   useEffect(() => {
     router.prefetch("/puzzle");
   }, [router]);
+
+  useEffect(() => {
+    if (!canUseOverlayToggle || typeof window === "undefined") return;
+    try {
+      const search = new URLSearchParams(window.location.search);
+      const queryEnabled = search.get("lobby_overlay") === "1";
+      const storedEnabled =
+        window.localStorage.getItem(LOBBY_OVERLAY_STORAGE_KEY) === "1";
+      setShowLobbyOverlay(queryEnabled || storedEnabled);
+    } catch {
+      setShowLobbyOverlay(false);
+    }
+  }, [canUseOverlayToggle]);
 
   const openCafeFromQuery = useCallback(() => {
     setOpen({ sheet: "showcase", cafeSections: ["craft"] });
@@ -84,6 +111,22 @@ export function LobbyScreen() {
 
   const closeSheet = useCallback(() => setOpen(null), []);
   const closeMenu = useCallback(() => setMenuOpen(false), []);
+  const toggleLobbyOverlay = useCallback(() => {
+    if (!canUseOverlayToggle || typeof window === "undefined") return;
+    setShowLobbyOverlay((current) => {
+      const next = !current;
+      try {
+        if (next) {
+          window.localStorage.setItem(LOBBY_OVERLAY_STORAGE_KEY, "1");
+        } else {
+          window.localStorage.removeItem(LOBBY_OVERLAY_STORAGE_KEY);
+        }
+      } catch {
+        // Overlay debug state should never affect lobby behavior.
+      }
+      return next;
+    });
+  }, [canUseOverlayToggle]);
 
   const title = open ? t(LOBBY_SHEET_TITLE_ID[open.sheet]) : "";
   const tagline = open ? t(LOBBY_SHEET_TAGLINE_ID[open.sheet]) : undefined;
@@ -112,12 +155,48 @@ export function LobbyScreen() {
       <Suspense fallback={null}>
         <LobbyPanelQuerySync onCafePanelFromQuery={openCafeFromQuery} />
       </Suspense>
-      <AppShell className="pt-1.5 sm:pt-2.5">
-        <header className="relative mb-1.5 flex flex-col gap-0.5">
-          <div className="absolute left-0 top-0 z-20">
+      <div className="relative min-h-[100dvh] overflow-x-hidden bg-[#d9efff]">
+        <main className="relative mx-auto h-[100dvh] w-full max-w-md overflow-hidden">
+          <div className="pointer-events-none absolute inset-0">
+            <Image
+              src={LOBBY_BG_ASSET}
+              alt=""
+              fill
+              priority
+              sizes="(max-width: 768px) 100vw, 28rem"
+              className="object-cover object-center"
+            />
+            <div
+              className="absolute inset-0"
+              style={{
+                backgroundImage:
+                  "linear-gradient(180deg, rgba(255, 251, 244, 0.12) 0%, rgba(255, 248, 240, 0.05) 42%, rgba(255, 247, 237, 0.18) 100%)",
+              }}
+            />
+          </div>
+
+          {showLobbyOverlay ? (
+            <div className="pointer-events-none absolute inset-0 z-[60] opacity-30">
+              <Image
+                src={LOBBY_REFERENCE_OVERLAY_ASSET}
+                alt=""
+                fill
+                sizes="(max-width: 768px) 100vw, 28rem"
+                className="object-cover object-center"
+              />
+            </div>
+          ) : null}
+
+          <div
+            className="absolute left-[4.2%] z-40"
+            style={{ top: "calc(env(safe-area-inset-top) + 0.9rem)" }}
+          >
             <AccountLevelCard />
           </div>
-          <div className="absolute right-0 top-0 z-20">
+          <div
+            className="absolute right-[4.8%] z-40"
+            style={{ top: "calc(env(safe-area-inset-top) + 1rem)" }}
+          >
             <LobbyTopMenu
               open={menuOpen}
               onToggle={() => setMenuOpen((v) => !v)}
@@ -125,66 +204,88 @@ export function LobbyScreen() {
               reduceMotion={reduceMotion}
             />
           </div>
-          <div className="pointer-events-none flex w-full justify-center px-0.5">
-            <div className="w-full max-w-[432px] sm:max-w-[468px]">
+
+          <div className="pointer-events-none absolute left-1/2 top-[4.15%] z-30 w-[57.5%] -translate-x-1/2">
+            <div className="relative aspect-[497/304] w-full">
               <Image
-                src={publicAssetPath("/images/optimized/brand/cafe-2048-title-2.webp")}
-                alt="Cafe 2048"
-                width={1115}
-                height={584}
+                src={LOBBY_TITLE_LOGO_ASSET}
+                alt="Coffee 2048"
+                fill
                 priority
-                sizes="(max-width: 640px) 432px, 468px"
-                className="mx-auto h-auto w-full max-h-[6.3rem] object-contain object-center drop-shadow-[0_1px_2px_rgb(62_47_35_/_0.12)] sm:max-h-[7.4rem]"
+                sizes="(max-width: 768px) 58vw, 16rem"
+                className="object-contain object-center drop-shadow-[0_10px_24px_rgb(76_53_37_/_0.18)]"
               />
             </div>
           </div>
           <h1 className="sr-only">{t("lobby.srOnly.todayShop")}</h1>
-        </header>
 
-        {!lobbyOnboardingSeen ? (
-          <div className="mb-2 flex items-start gap-2 rounded-2xl bg-cream-200/50 px-3 py-2 ring-1 ring-accent-soft/25">
-            <p className="min-w-0 flex-1 text-xs leading-relaxed text-coffee-800">
-              {t("lobby.onboarding.hint")}
-            </p>
-            <Button
-              type="button"
-              variant="ghost"
-              className="shrink-0 px-2 py-1 text-xs"
-              onClick={() => patchSettings({ lobbyOnboardingSeen: true })}
-            >
-              {t("lobby.onboarding.dismiss")}
-            </Button>
+          <LobbyOpsDashboard
+            onOpenRoast={() => {
+              if (soundOn) playRoasterOpen();
+              openSheet("roast", ["roast"]);
+            }}
+            onOpenShowcase={() => {
+              if (soundOn) playWorkbenchOpen();
+              openSheet("showcase", ["craft"]);
+            }}
+            onOpenCounter={() => {
+              if (soundOn) playCounterOpen();
+              openSheet("counter");
+            }}
+            onOpenShop={() => {
+              openSheet("shop");
+            }}
+            onOpenPuzzle={() => {
+              if (!consumeHeart()) return;
+              window.dispatchEvent(
+                new CustomEvent("coffee:request-bgm-fadeout", { detail: { ms: 1200 } }),
+              );
+              runSceneTransition(() => router.push("/puzzle"), "/puzzle");
+            }}
+          />
+
+          <div
+            className="absolute left-1/2 z-40 flex w-[88%] max-w-[23rem] -translate-x-1/2 flex-col gap-2"
+            style={{ bottom: "calc(env(safe-area-inset-bottom) + 4.9rem)" }}
+          >
+            {!lobbyOnboardingSeen ? (
+              <div className="flex items-start gap-2 rounded-2xl bg-cream-50/80 px-3 py-2 ring-1 ring-accent-soft/20 backdrop-blur-[3px]">
+                <p className="min-w-0 flex-1 text-xs leading-relaxed text-coffee-800">
+                  {t("lobby.onboarding.hint")}
+                </p>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="shrink-0 px-2 py-1 text-xs"
+                  onClick={() => patchSettings({ lobbyOnboardingSeen: true })}
+                >
+                  {t("lobby.onboarding.dismiss")}
+                </Button>
+              </div>
+            ) : null}
+
+            <OfflineSalesCard className="mb-0" />
           </div>
-        ) : null}
 
-        <ResourceBar variant="compact" className="mb-2" />
-        <OfflineSalesCard className="mb-3" />
+          <div
+            className="absolute left-1/2 z-30 w-[66%] -translate-x-1/2"
+            style={{ bottom: "calc(env(safe-area-inset-bottom) + 0.95rem)" }}
+          >
+            <ResourceBar variant="compact" className="!mb-0 max-w-none" />
+          </div>
 
-        <LobbyOpsDashboard
-          onOpenRoast={() => {
-            if (soundOn) playRoasterOpen();
-            openSheet("roast", ["roast"]);
-          }}
-          onOpenShowcase={() => {
-            if (soundOn) playWorkbenchOpen();
-            openSheet("showcase", ["craft"]);
-          }}
-          onOpenCounter={() => {
-            if (soundOn) playCounterOpen();
-            openSheet("counter");
-          }}
-          onOpenShop={() => {
-            openSheet("shop");
-          }}
-          onOpenPuzzle={() => {
-            if (!consumeHeart()) return;
-            window.dispatchEvent(
-              new CustomEvent("coffee:request-bgm-fadeout", { detail: { ms: 1200 } }),
-            );
-            runSceneTransition(() => router.push("/puzzle"), "/puzzle");
-          }}
-        />
-      </AppShell>
+          {canUseOverlayToggle ? (
+            <button
+              type="button"
+              onClick={toggleLobbyOverlay}
+              className="absolute left-3 z-[70] rounded-full bg-coffee-950/70 px-3 py-1.5 text-[11px] font-semibold text-cream-50 shadow-md backdrop-blur"
+              style={{ top: "calc(env(safe-area-inset-top) + 5rem)" }}
+            >
+              {showLobbyOverlay ? "Overlay On" : "Overlay Off"}
+            </button>
+          ) : null}
+        </main>
+      </div>
 
       <LobbyBottomSheet
         open={open !== null}
@@ -329,28 +430,26 @@ function LobbyTopMenu({
         onClick={onToggle}
         aria-label="메뉴 열기"
         aria-expanded={open}
-        className="flex h-11 w-11 items-center justify-center rounded-full bg-cream-50/90 text-coffee-800 shadow-card ring-1 ring-coffee-600/10 backdrop-blur-sm transition-colors hover:bg-cream-50"
+        className={cn(
+          "relative flex h-[3.35rem] w-[3.35rem] items-center justify-center overflow-hidden rounded-[1.15rem] transition-transform duration-150 ease-out active:scale-95",
+          open && "scale-[0.98]",
+        )}
       >
-        <div className="flex w-[18px] flex-col gap-[3px]">
-          <span
-            className={cn(
-              "h-[2px] rounded-full bg-current transition-transform duration-200",
-              open && "translate-y-[5px] rotate-45",
-            )}
-          />
-          <span
-            className={cn(
-              "h-[2px] rounded-full bg-current transition-opacity duration-200",
-              open && "opacity-0",
-            )}
-          />
-          <span
-            className={cn(
-              "h-[2px] rounded-full bg-current transition-transform duration-200",
-              open && "-translate-y-[5px] -rotate-45",
-            )}
-          />
-        </div>
+        <Image
+          src={LOBBY_MENU_BUTTON_ASSET}
+          alt=""
+          fill
+          sizes="3.35rem"
+          className="object-contain"
+          priority
+        />
+        <span
+          className={cn(
+            "absolute inset-0 rounded-[1.15rem] ring-2 ring-transparent transition-colors",
+            open && "ring-[#84aee8]/45",
+          )}
+          aria-hidden
+        />
       </button>
 
       <AnimatePresence>
@@ -425,202 +524,144 @@ function LobbyOpsDashboard({
 }) {
   const tileConfigs: Array<{
     key: "roast" | "showcase" | "counter" | "shop";
-    title?: string;
-    onClick?: () => void;
-    topImageSrc?: string;
-    topImageViewportClassName?: string;
-    topImageClassName?: string;
-    topImageWrapperClassName?: string;
+    title: string;
+    onClick: () => void;
+    imageSrc: string;
+    style: CSSProperties;
   }> = [
     {
       key: "roast",
       title: t("lobby.sheet.roast.title"),
       onClick: onOpenRoast,
-      topImageSrc: publicAssetPath("/images/optimized/ui/lobby-roaster-tile.webp"),
-      topImageViewportClassName:
-        "h-[6.75rem] w-[6.75rem] overflow-visible sm:h-[7.15rem] sm:w-[7.15rem]",
-      topImageClassName: "h-full w-full object-contain",
-      topImageWrapperClassName: "top-[0.15rem] sm:top-[0.2rem]",
+      imageSrc: LOBBY_ROASTER_TILE_ASSET,
+      style: { left: "4.45%", top: "16.1%", width: "43.65%" },
     },
     {
       key: "showcase",
       title: t("lobby.sheet.showcase.title"),
       onClick: onOpenShowcase,
-      topImageSrc: publicAssetPath("/images/optimized/ui/lobby-workbench-tile.webp"),
-      topImageViewportClassName:
-        "h-[5.25rem] w-[8.75rem] sm:h-[5.55rem] sm:w-[9.2rem]",
-      topImageClassName: "h-full w-full object-contain",
-      topImageWrapperClassName: "top-[0.8rem] sm:top-[0.9rem]",
+      imageSrc: LOBBY_DRINK_TILE_ASSET,
+      style: { right: "4.45%", top: "16.1%", width: "43.65%" },
     },
     {
       key: "counter",
       title: t("lobby.tile.counter.title"),
       onClick: onOpenCounter,
-      topImageSrc: publicAssetPath("/images/optimized/ui/lobby-counter-tile.webp"),
-      topImageViewportClassName:
-        "h-[5.95rem] w-[8.7rem] sm:h-[6.25rem] sm:w-[9.1rem]",
-      topImageClassName: "h-full w-full object-contain",
-      topImageWrapperClassName: "top-[0.55rem] sm:top-[0.65rem]",
+      imageSrc: LOBBY_CASHIER_TILE_ASSET,
+      style: { left: "4.45%", top: "48.35%", width: "43.65%" },
     },
     {
       key: "shop",
       title: t("lobby.tile.shop.title"),
       onClick: onOpenShop,
+      imageSrc: LOBBY_SHOP_TILE_ASSET,
+      style: { right: "4.45%", top: "48.35%", width: "43.65%" },
     },
   ];
 
   return (
-    <section className="mb-2">
-      <Card className="flex flex-col p-3.5 sm:p-4">
-        <div className="flex flex-col items-center gap-2.5 text-center">
-          <div className="text-[1.4rem] font-semibold leading-none tracking-[-0.03em] text-coffee-900">
-            2048
-          </div>
-          <p className="text-sm leading-relaxed text-coffee-700/80">
-            {t("lobby.card.puzzle.desc")}
-          </p>
-          <Button
-            type="button"
-            variant="soft"
-            className="h-9 min-h-0 w-full max-w-[9.5rem] shrink-0 text-sm sm:w-[8.5rem]"
-            onClick={onOpenPuzzle}
-          >
-            PLAY
-          </Button>
-        </div>
-      </Card>
-
+    <section>
       <div
         data-testid="lobby-reference-tile-grid"
-        className="mt-5 sm:mt-6"
+        className="absolute left-1/2 top-[16.45%] z-20 w-[97%] -translate-x-1/2"
       >
-        <div className="-mx-3 grid grid-cols-2 gap-x-0.5 gap-y-2 sm:mx-0 sm:mx-auto sm:max-w-[26.5rem] sm:gap-x-1.5 sm:gap-y-2.5">
+        <div className="relative mx-auto aspect-[824/1017] w-full">
+          <Image
+            src={LOBBY_TILE_FRAME_ASSET}
+            alt=""
+            fill
+            sizes="(max-width: 768px) 97vw, 27rem"
+            className="object-contain drop-shadow-[0_20px_45px_rgb(82_58_43_/_0.18)]"
+            priority
+          />
           {tileConfigs.map((tile) => (
-            <LobbyWhitePanelTile
+            <LobbyGraphicTile
               key={tile.key}
               dataTestId={`lobby-reference-tile-${tile.key}`}
               title={tile.title}
+              imageSrc={tile.imageSrc}
               onClick={tile.onClick}
-              topImageSrc={tile.topImageSrc}
-              topImageViewportClassName={tile.topImageViewportClassName}
-              topImageClassName={tile.topImageClassName}
-              topImageWrapperClassName={tile.topImageWrapperClassName}
+              style={tile.style}
             />
           ))}
         </div>
       </div>
+      <button
+        type="button"
+        aria-label="PLAY"
+        onClick={onOpenPuzzle}
+        className="absolute left-1/2 top-[75.8%] z-30 block w-[66%] -translate-x-1/2 transition-transform duration-150 ease-out active:scale-[0.985]"
+      >
+        <span className="sr-only">PLAY</span>
+        <div className="relative aspect-[738/260] w-full">
+          <Image
+            src={LOBBY_PLAY_BUTTON_ASSET}
+            alt=""
+            fill
+            priority
+            sizes="(max-width: 768px) 66vw, 18rem"
+            className="object-contain drop-shadow-[0_14px_28px_rgb(91_69_47_/_0.22)]"
+          />
+        </div>
+      </button>
     </section>
   );
 }
 
-function LobbyWhitePanelTile({
+function LobbyGraphicTile({
   dataTestId,
   title,
   onClick,
   className,
-  topImageSrc,
-  topImageViewportClassName,
-  topImageClassName,
-  topImageWrapperClassName,
+  imageSrc,
+  style,
 }: {
   dataTestId?: string;
-  title?: string;
+  title: string;
   onClick?: () => void;
   className?: string;
-  topImageSrc?: string;
-  topImageViewportClassName?: string;
-  topImageClassName?: string;
-  topImageWrapperClassName?: string;
+  imageSrc: string;
+  style?: CSSProperties;
 }) {
   const content = (
-    <>
-      <div className="absolute inset-0">
-        <Image
-          src={publicAssetPath("/images/optimized/ui/lobby-white-panel-figma.webp")}
-          alt=""
-          fill
-          sizes="(max-width: 640px) 54vw, 320px"
-          className="object-contain object-center"
-          priority={false}
-        />
-      </div>
-      <div className="relative z-10 flex h-full items-end justify-center px-4 pb-[1.78rem] sm:px-5 sm:pb-[1.88rem]">
-        {title ? (
-          <div className="w-full text-center text-[13px] font-bold leading-none tracking-[-0.03em] text-[#241811] sm:text-[14px]">
-            {title}
-          </div>
-        ) : null}
-      </div>
-    </>
+    <div className="relative aspect-[412/593] w-full">
+      <Image
+        src={imageSrc}
+        alt=""
+        fill
+        sizes="(max-width: 768px) 42vw, 12rem"
+        className="object-contain object-center"
+        priority={false}
+      />
+    </div>
   );
 
   if (onClick) {
     return (
-      <div className={cn("relative w-full pt-[1.65rem] sm:pt-[1.8rem]", className)}>
-        {topImageSrc ? (
-          <div
-            className={cn(
-              "pointer-events-none absolute left-1/2 top-0 z-10 -translate-x-1/2",
-              topImageWrapperClassName,
-            )}
-          >
-            <div className={cn("relative", topImageViewportClassName)}>
-              <Image
-                src={topImageSrc}
-                alt=""
-                width={320}
-                height={320}
-                className={cn(
-                  "max-w-none drop-shadow-[0_10px_18px_rgb(90_61_43_/_0.18)]",
-                  topImageClassName,
-                )}
-                priority={false}
-              />
-            </div>
-          </div>
-        ) : null}
-        <button
-          data-testid={dataTestId}
-          type="button"
-          onClick={onClick}
-          className="relative block aspect-[3/2] w-full overflow-hidden rounded-[2rem] text-left transition-transform duration-150 ease-out active:scale-[0.985]"
-        >
-          {content}
-        </button>
-      </div>
+      <button
+        data-testid={dataTestId}
+        type="button"
+        aria-label={title}
+        onClick={onClick}
+        className={cn(
+          "absolute block overflow-visible text-left transition-transform duration-150 ease-out active:scale-[0.985]",
+          className,
+        )}
+        style={style}
+      >
+        {content}
+        <span className="sr-only">{title}</span>
+      </button>
     );
   }
 
   return (
-    <div className={cn("relative w-full pt-[1.65rem] sm:pt-[1.8rem]", className)}>
-      {topImageSrc ? (
-        <div
-          className={cn(
-            "pointer-events-none absolute left-1/2 top-0 z-10 -translate-x-1/2",
-            topImageWrapperClassName,
-          )}
-        >
-          <div className={cn("relative", topImageViewportClassName)}>
-            <Image
-              src={topImageSrc}
-              alt=""
-              width={320}
-              height={320}
-              className={cn(
-                "max-w-none drop-shadow-[0_10px_18px_rgb(90_61_43_/_0.18)]",
-                topImageClassName,
-              )}
-              priority={false}
-            />
-          </div>
-        </div>
-      ) : null}
-      <div
-        data-testid={dataTestId}
-        className="relative aspect-[3/2] w-full overflow-hidden rounded-[2rem]"
-      >
-        {content}
-      </div>
+    <div
+      data-testid={dataTestId}
+      className={cn("absolute overflow-visible", className)}
+      style={style}
+    >
+      {content}
     </div>
   );
 }

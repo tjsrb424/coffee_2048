@@ -9,6 +9,7 @@ import {
   spawnInitialPair,
   spawnRandomTile,
 } from "@/features/puzzle2048/engine";
+import { PUZZLE_MOVE_ANIMATION_MS } from "@/features/puzzle2048/constants/animation";
 import type { Board, Direction } from "@/features/puzzle2048/types";
 
 function boardValueMap(board: Board): Map<string, number> {
@@ -35,6 +36,7 @@ export type PuzzleSessionState = {
   board: Board;
   score: number;
   gameOver: boolean;
+  /** 이동/합체 애니메이션 동안만 입력을 잠근다. spawn pop-in은 포함하지 않는다. */
   inputLocked: boolean;
   lastMergeCount: number;
   sessionMergeCount: number;
@@ -42,35 +44,70 @@ export type PuzzleSessionState = {
   /** 이번 입력으로 “합체 결과”가 된 타일(id)과 펄스 강도 */
   lastMergePulseById: Record<string, number>;
   startFresh: () => void;
-  /** 이동 시도. 성공하면 짧게 입력 잠금 */
+  /** 이동 시도. 이동 중이면 마지막 방향 1개만 큐에 보관한다. */
   tryMove: (dir: Direction) => void;
 };
 
-export const usePuzzleSessionStore = create<PuzzleSessionState>((set, get) => ({
-  board: createEmptyBoard(),
-  score: 0,
-  gameOver: false,
-  inputLocked: false,
-  lastMergeCount: 0,
-  sessionMergeCount: 0,
-  lastScoreDelta: 0,
-  lastMergePulseById: {},
-  startFresh: () => {
-    const board = spawnInitialPair(createEmptyBoard());
-    set({
-      board,
-      score: 0,
-      gameOver: false,
-      inputLocked: false,
-      lastMergeCount: 0,
-      sessionMergeCount: 0,
-      lastScoreDelta: 0,
-      lastMergePulseById: {},
-    });
-  },
-  tryMove: (dir) => {
+export const usePuzzleSessionStore = create<PuzzleSessionState>((set, get) => {
+  let queuedDirection: Direction | null = null;
+  let moveCycleId = 0;
+  let moveTimer: number | null = null;
+  let queuedMoveRaf: number | null = null;
+  let mergeCountResetTimer: number | null = null;
+  let scoreDeltaResetTimer: number | null = null;
+  let mergePulseResetTimer: number | null = null;
+
+  const clearMoveTimer = () => {
+    if (moveTimer !== null) {
+      window.clearTimeout(moveTimer);
+      moveTimer = null;
+    }
+  };
+
+  const clearQueuedMoveRaf = () => {
+    if (queuedMoveRaf !== null) {
+      window.cancelAnimationFrame(queuedMoveRaf);
+      queuedMoveRaf = null;
+    }
+  };
+
+  const clearFeedbackTimers = () => {
+    if (mergeCountResetTimer !== null) {
+      window.clearTimeout(mergeCountResetTimer);
+      mergeCountResetTimer = null;
+    }
+    if (scoreDeltaResetTimer !== null) {
+      window.clearTimeout(scoreDeltaResetTimer);
+      scoreDeltaResetTimer = null;
+    }
+    if (mergePulseResetTimer !== null) {
+      window.clearTimeout(mergePulseResetTimer);
+      mergePulseResetTimer = null;
+    }
+  };
+
+  const resetPendingMotion = () => {
+    moveCycleId += 1;
+    queuedDirection = null;
+    clearMoveTimer();
+    clearQueuedMoveRaf();
+    clearFeedbackTimers();
+  };
+
+  const scheduleFeedbackResets = () => {
+    clearFeedbackTimers();
+    mergeCountResetTimer = window.setTimeout(() => set({ lastMergeCount: 0 }), 320);
+    scoreDeltaResetTimer = window.setTimeout(() => set({ lastScoreDelta: 0 }), 520);
+    mergePulseResetTimer = window.setTimeout(
+      () => set({ lastMergePulseById: {} }),
+      240,
+    );
+  };
+
+  const executeMove = (dir: Direction) => {
     const s = get();
-    if (s.inputLocked || s.gameOver) return;
+    if (s.gameOver) return;
+
     const moved = moveBoard(s.board, dir);
     if (!moved.moved) return;
 
@@ -87,27 +124,84 @@ export const usePuzzleSessionStore = create<PuzzleSessionState>((set, get) => ({
       }
     }
 
-    const spawned = spawnRandomTile(moved.board);
+    queuedDirection = null;
+    clearMoveTimer();
+    clearQueuedMoveRaf();
+
     const nextScore = s.score + moved.scoreDelta;
-    const over = !canMove(spawned);
+    moveCycleId += 1;
+    const cycleId = moveCycleId;
+
     set({
-      board: spawned,
+      board: moved.board,
       score: nextScore,
       lastMergeCount: moved.mergeCount,
       sessionMergeCount: s.sessionMergeCount + moved.mergeCount,
       lastScoreDelta: moved.scoreDelta,
       lastMergePulseById,
-      gameOver: over,
+      gameOver: false,
       inputLocked: true,
     });
-    window.setTimeout(() => {
-      if (get().inputLocked) set({ inputLocked: false });
-    }, 175);
-    window.setTimeout(() => set({ lastMergeCount: 0 }), 320);
-    window.setTimeout(() => set({ lastScoreDelta: 0 }), 520);
-    window.setTimeout(() => set({ lastMergePulseById: {} }), 240);
-  },
-}));
+    scheduleFeedbackResets();
+
+    moveTimer = window.setTimeout(() => {
+      if (cycleId !== moveCycleId) return;
+
+      const spawned = spawnRandomTile(moved.board);
+      const over = !canMove(spawned);
+      const queued = queuedDirection;
+      queuedDirection = null;
+
+      set({
+        board: spawned,
+        gameOver: over,
+        inputLocked: false,
+      });
+
+      if (!queued || over) return;
+
+      queuedMoveRaf = window.requestAnimationFrame(() => {
+        queuedMoveRaf = null;
+        if (cycleId !== moveCycleId) return;
+        executeMove(queued);
+      });
+    }, PUZZLE_MOVE_ANIMATION_MS);
+  };
+
+  return {
+    board: createEmptyBoard(),
+    score: 0,
+    gameOver: false,
+    inputLocked: false,
+    lastMergeCount: 0,
+    sessionMergeCount: 0,
+    lastScoreDelta: 0,
+    lastMergePulseById: {},
+    startFresh: () => {
+      resetPendingMotion();
+      const board = spawnInitialPair(createEmptyBoard());
+      set({
+        board,
+        score: 0,
+        gameOver: false,
+        inputLocked: false,
+        lastMergeCount: 0,
+        sessionMergeCount: 0,
+        lastScoreDelta: 0,
+        lastMergePulseById: {},
+      });
+    },
+    tryMove: (dir) => {
+      const s = get();
+      if (s.gameOver) return;
+      if (s.inputLocked) {
+        queuedDirection = dir;
+        return;
+      }
+      executeMove(dir);
+    },
+  };
+});
 
 export function readPuzzleOutcomeFromState(state: PuzzleSessionState): {
   score: number;

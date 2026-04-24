@@ -87,9 +87,13 @@ export function ReadOnlyAdDebugPanel({ className }: { className?: string }) {
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0 }}
           transition={{ type: "spring", stiffness: 420, damping: 32 }}
-          className="pointer-events-auto mt-2 w-[min(92vw,28rem)]"
+          className="pointer-events-auto mt-2"
+          style={{ width: "min(92vw, 28rem)" }}
         >
-          <Card className="max-h-[min(78vh,40rem)] overflow-y-auto overscroll-contain p-4">
+          <Card
+            className="overflow-y-auto overscroll-contain p-4"
+            style={{ maxHeight: "min(78vh, 40rem)" }}
+          >
             <div className="flex items-start justify-between gap-3">
               <div>
                 <div className="text-xs font-semibold uppercase tracking-wide text-coffee-600/60">

@@ -1,14 +1,20 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useMemo, useState } from "react";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { AnimatedNumber } from "@/components/common/AnimatedNumber";
 import { BeanIcon } from "@/components/ui/BeanIcon";
 import { CoinIcon } from "@/components/ui/CoinIcon";
 import { HeartIcon } from "@/components/ui/HeartIcon";
+import { publicAssetPath } from "@/lib/publicAssetPath";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/useAppStore";
 import { useLobbyFxStore } from "@/stores/useLobbyFxStore";
+
+const LOBBY_CURRENCY_BAR_ASSET = publicAssetPath(
+  "/assets/lobby/lobby_hud_currency_bar.png",
+);
 
 function formatMMSS(totalSec: number): string {
   const s = Math.max(0, Math.floor(totalSec));
@@ -59,49 +65,64 @@ export function ResourceBar({
       <motion.div
         layout={!reduceMotion}
         className={cn(
-          "mb-3 flex items-stretch gap-1.5 rounded-2xl bg-cream-50/88 px-2 py-1.5 shadow-card",
+          "relative mx-auto mb-3 w-full max-w-[23.5rem]",
           className,
         )}
       >
-        <CompactStat
-          label="코인"
-          icon={
-            <>
-              <CoinIcon size={22} className="opacity-95" />
-              <span className="sr-only">코인</span>
-            </>
-          }
-          value={coins}
-          delta={rewardPulse?.coins ?? 0}
-          deltaKey={rewardPulse?.key}
-          reduceMotion={reduceMotion}
-        />
-        <CompactStat
-          label="원두"
-          icon={
-            <>
-              <BeanIcon size={20} className="opacity-95" />
-              <span className="sr-only">원두</span>
-            </>
-          }
-          value={beans}
-          delta={rewardPulse?.beans ?? 0}
-          deltaKey={rewardPulse?.key}
-          reduceMotion={reduceMotion}
-        />
-        <CompactStat
-          label="하트"
-          icon={
-            <>
-              <HeartIcon size={20} className="opacity-95" />
-              <span className="sr-only">하트</span>
-            </>
-          }
-          value={hearts}
-          delta={rewardPulse?.hearts ?? 0}
-          deltaKey={rewardPulse?.key}
-          reduceMotion={reduceMotion}
-        />
+        <div className="relative aspect-[486/86] w-full">
+          <Image
+            src={LOBBY_CURRENCY_BAR_ASSET}
+            alt=""
+            fill
+            priority
+            sizes="(max-width: 640px) calc(100vw - 2rem), 23.5rem"
+            className="object-contain drop-shadow-[0_8px_20px_rgb(78_56_40_/_0.12)]"
+          />
+          <div className="absolute inset-x-[3.5%] inset-y-[11%] grid grid-cols-3 gap-1.5">
+            <CompactStat
+              label="코인"
+              icon={
+                <>
+                  <CoinIcon size={18} className="opacity-95" />
+                  <span className="sr-only">코인</span>
+                </>
+              }
+              value={coins}
+              delta={rewardPulse?.coins ?? 0}
+              deltaKey={rewardPulse?.key}
+              reduceMotion={reduceMotion}
+              className="bg-transparent ring-0 shadow-none"
+            />
+            <CompactStat
+              label="원두"
+              icon={
+                <>
+                  <BeanIcon size={17} className="opacity-95" />
+                  <span className="sr-only">원두</span>
+                </>
+              }
+              value={beans}
+              delta={rewardPulse?.beans ?? 0}
+              deltaKey={rewardPulse?.key}
+              reduceMotion={reduceMotion}
+              className="bg-transparent ring-0 shadow-none"
+            />
+            <CompactStat
+              label="하트"
+              icon={
+                <>
+                  <HeartIcon size={17} className="opacity-95" />
+                  <span className="sr-only">하트</span>
+                </>
+              }
+              value={hearts}
+              delta={rewardPulse?.hearts ?? 0}
+              deltaKey={rewardPulse?.key}
+              reduceMotion={reduceMotion}
+              className="bg-transparent ring-0 shadow-none"
+            />
+          </div>
+        </div>
       </motion.div>
     );
   }
@@ -176,6 +197,7 @@ function CompactStat({
   delta,
   deltaKey,
   reduceMotion,
+  className,
 }: {
   label: string;
   icon?: React.ReactNode;
@@ -183,14 +205,20 @@ function CompactStat({
   delta: number;
   deltaKey?: number;
   reduceMotion: boolean;
+  className?: string;
 }) {
   return (
-    <div className="relative flex min-w-0 flex-1 items-center justify-center gap-2.5 rounded-xl bg-cream-200/60 px-2 py-2 ring-1 ring-coffee-600/5">
+    <div
+      className={cn(
+        "relative flex min-w-0 flex-1 items-center justify-center gap-2 rounded-xl bg-cream-200/60 px-2 py-2 ring-1 ring-coffee-600/5",
+        className,
+      )}
+    >
       <div className="flex h-7 w-7 shrink-0 items-center justify-center text-[10px] font-semibold text-coffee-600/70">
         {icon ?? label}
       </div>
       <div className="min-w-0 text-center text-[15px] font-bold tabular-nums leading-none text-coffee-900">
-        x<AnimatedNumber value={value} />
+        <AnimatedNumber value={value} />
       </div>
       <RewardDelta
         show={delta > 0}

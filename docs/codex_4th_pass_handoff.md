@@ -124,6 +124,8 @@
 - `tests/visual/recipe-ownership.spec.ts` 기대값을 새 시간대 레시피 가격에 맞춰 갱신하고 회귀를 다시 통과시켰다.
 - 이번 세션에서는 `tests/visual/core-loop.spec.ts`를 추가해, **퍼즐 1판 -> 결과 보상 -> 로비 반영 -> 로스팅/제작/진열/판매 -> 코인 증가 -> 새로고침 유지**가 실제 UI + 저장 write path 기준으로 한 번 닫히는지 Playwright 회귀 1건으로 고정했다.
 - 이 테스트는 기존 `ownershipTestUtils.ts`의 디버그 save import/export와 고정 시계를 재사용하고, 퍼즐 쪽은 고정 RNG + 짧은 입력 시퀀스로 최소 득점 경로만 재현하도록 설계했다.
+- 최근 로비 Figma 1차 패스에서는 `LobbyScreen`, `ResourceBar`, `AccountLevelCard`에 exported asset을 실제로 입혔다. 적용 범위는 로비 배경, 상단 로고, 메뉴 버튼, 4개 메인 타일, 플레이 버튼, compact HUD bar, 레벨/티어 배지까지이고, 바텀시트/오프라인 카드/`CafeLoopSection` 내부 카드 외형은 아직 기능 셸 상태로 남겨 두었다.
+- 이 패스에서도 기존 클릭 액션, `useAppStore`/claim/store 흐름, `data-testid="lobby-reference-tile-*"`와 `data-testid="lobby-reference-tile-grid"`, `aria-label="메뉴 열기"`, `PLAY` 버튼 anchor는 유지했다.
 
 ---
 

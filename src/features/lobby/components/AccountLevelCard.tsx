@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { Card } from "@/components/ui/Card";
@@ -12,8 +13,11 @@ import { missionDefinitionById } from "@/features/meta/progression/missionDefini
 import { normalizeAccountLevelState } from "@/features/meta/progression/missionEngine";
 import type { MissionDefinition } from "@/features/meta/types/gameState";
 import { t } from "@/locale/i18n";
+import { publicAssetPath } from "@/lib/publicAssetPath";
 import { cn } from "@/lib/utils";
 import { useAppStore } from "@/stores/useAppStore";
+
+const LOBBY_TIER_BADGE_ASSET = publicAssetPath("/assets/lobby/lobby_btn_tier.png");
 
 const TIER_BACKGROUNDS = [
   "from-[#fff8e8] via-[#f4dfbc] to-[#e7c187]",
@@ -96,15 +100,29 @@ export function AccountLevelCard() {
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
         className={cn(
-          "grid h-11 w-11 place-items-center rounded-full bg-gradient-to-br text-coffee-950 shadow-card ring-1 ring-cream-50/70 backdrop-blur-sm transition-transform duration-150 ease-out active:scale-95",
-          tierBg,
+          "relative grid h-[3.45rem] w-[3.45rem] place-items-center overflow-hidden rounded-full text-coffee-950 shadow-[0_12px_26px_rgb(72_50_35_/_0.16)] transition-transform duration-150 ease-out active:scale-95",
         )}
       >
-        <span className="flex h-[2.35rem] w-[2.35rem] flex-col items-center justify-center rounded-full bg-cream-50/82 text-center leading-none ring-1 ring-coffee-600/8">
-          <span className="text-[10px] font-black uppercase tracking-[-0.04em]">
+        <Image
+          src={LOBBY_TIER_BADGE_ASSET}
+          alt=""
+          fill
+          sizes="3.45rem"
+          className="object-contain"
+          priority
+        />
+        <span
+          className={cn(
+            "absolute inset-[0.34rem] rounded-full bg-gradient-to-br opacity-45",
+            tierBg,
+          )}
+          aria-hidden
+        />
+        <span className="relative z-10 flex h-[2.2rem] w-[2.2rem] flex-col items-center justify-center rounded-full bg-cream-50/56 text-center leading-none">
+          <span className="text-[10px] font-black uppercase tracking-[-0.04em] text-coffee-800">
             Lv
           </span>
-          <span className="mt-0.5 text-[12px] font-black tabular-nums tracking-[-0.05em]">
+          <span className="mt-0.5 text-[12px] font-black tabular-nums tracking-[-0.05em] text-coffee-950">
             {account.level}
           </span>
         </span>
