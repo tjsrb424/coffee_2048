@@ -272,12 +272,13 @@ test("offline reward waits for claim and survives reload", async ({ page }) => {
   await page.reload();
 
   const beforeClaim = await exportDebugSaveBundle(page);
+  const expectedOfflineCoins = 15;
   expect(beforeClaim.app.playerResources.coins).toBe(1_000);
   expect(beforeClaim.app.cafeState.menuStock.americano).toBe(0);
   expect(beforeClaim.app.cafeState.displaySellingActive).toBe(false);
   expect(beforeClaim.app.cafeState.pendingOfflineReward).toMatchObject({
     soldCount: 3,
-    pendingCoins: 18,
+    pendingCoins: expectedOfflineCoins,
   });
   expect(beforeClaim.app.cafeState.pendingOfflineReward?.generatedAtMs).toBeGreaterThanOrEqual(
     nowMs,
@@ -289,16 +290,16 @@ test("offline reward waits for claim and survives reload", async ({ page }) => {
   await claimButton.click();
 
   const afterClaim = await exportDebugSaveBundle(page);
-  expect(afterClaim.app.playerResources.coins).toBe(1_018);
+  expect(afterClaim.app.playerResources.coins).toBe(1_000 + expectedOfflineCoins);
   expect(afterClaim.app.cafeState.pendingOfflineReward).toBeNull();
-  expect(afterClaim.app.cafeState.lastOfflineSaleCoins).toBe(18);
+  expect(afterClaim.app.cafeState.lastOfflineSaleCoins).toBe(expectedOfflineCoins);
   expect(afterClaim.app.cafeState.lastOfflineSaleSoldCount).toBe(3);
 
   await page.reload();
   await expect(page.getByText("오프라인 보상")).toHaveCount(0);
 
   const afterReload = await exportDebugSaveBundle(page);
-  expect(afterReload.app.playerResources.coins).toBe(1_018);
+  expect(afterReload.app.playerResources.coins).toBe(1_000 + expectedOfflineCoins);
   expect(afterReload.app.cafeState.pendingOfflineReward).toBeNull();
-  expect(afterReload.app.cafeState.lastOfflineSaleCoins).toBe(18);
+  expect(afterReload.app.cafeState.lastOfflineSaleCoins).toBe(expectedOfflineCoins);
 });

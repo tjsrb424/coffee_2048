@@ -149,6 +149,7 @@ export function DevDebugPanel({ className }: { className?: string }) {
     >
       <div className="pointer-events-auto flex items-center gap-2">
         <button
+          data-visual-test-hidden="true"
           type="button"
           onClick={() => {
             lightTap();

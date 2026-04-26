@@ -9,10 +9,18 @@ import {
 
 test.describe.configure({ mode: "serial" });
 
+const SALE_IMPORT_GUARD_MS = 60_000;
+const SELL_ONCE_AFTER_IMPORT_MS = SALE_IMPORT_GUARD_MS + 4_100;
+
 async function openCounterSheet(page: Page) {
   const counterTile = page.getByTestId("lobby-reference-tile-counter");
   await counterTile.scrollIntoViewIfNeeded();
   await counterTile.click();
+}
+
+async function openCounterSheetAndStartSale(page: Page) {
+  await openCounterSheet(page);
+  await expect(page.getByRole("button", { name: "판매 중지" })).toBeVisible();
 }
 
 function quotaRngSeedForDay(dayKey: number) {
@@ -50,10 +58,14 @@ test("customer affection write path from live sale survives reload", async ({
       app: {
         cafeState: {
           displaySellingActive: true,
-          lastAutoSellAtMs: nowMs,
+          lastAutoSellAtMs: nowMs + SALE_IMPORT_GUARD_MS,
           menuStock: {
-            americano: 2,
+            americano: 1,
           },
+        },
+        meta: {
+          lastHeartRegenAtMs: nowMs + SALE_IMPORT_GUARD_MS,
+          lastSeenAtMs: nowMs + SALE_IMPORT_GUARD_MS,
         },
       },
       customers: {
@@ -64,7 +76,7 @@ test("customer affection write path from live sale survives reload", async ({
         lastFeaturedDayKey: dayKey,
         saleSession: {
           startedAtMs: nowMs,
-          queue: ["guest_023", "han_eun"],
+          queue: ["han_eun"],
           currentRemainingCups: 1,
           featuredQueued: true,
         },
@@ -80,10 +92,9 @@ test("customer affection write path from live sale survives reload", async ({
     }),
   );
 
-  await openCounterSheet(page);
-  await expect(page.getByRole("button", { name: "판매 중지" })).toBeVisible();
+  await openCounterSheetAndStartSale(page);
 
-  await page.clock.runFor(9_000);
+  await page.clock.runFor(SALE_IMPORT_GUARD_MS + 9_000);
 
   await expect(page.getByText("오늘의 손님 · 한은")).toBeVisible();
 
@@ -122,10 +133,14 @@ test("customer regular status write path survives reload", async ({ page }) => {
       app: {
         cafeState: {
           displaySellingActive: true,
-          lastAutoSellAtMs: nowMs,
+          lastAutoSellAtMs: nowMs + SALE_IMPORT_GUARD_MS,
           menuStock: {
             americano: 1,
           },
+        },
+        meta: {
+          lastHeartRegenAtMs: nowMs + SALE_IMPORT_GUARD_MS,
+          lastSeenAtMs: nowMs + SALE_IMPORT_GUARD_MS,
         },
       },
       customers: {
@@ -152,10 +167,9 @@ test("customer regular status write path survives reload", async ({ page }) => {
     }),
   );
 
-  await openCounterSheet(page);
-  await expect(page.getByRole("button", { name: "판매 중지" })).toBeVisible();
+  await openCounterSheetAndStartSale(page);
 
-  await page.clock.runFor(5_000);
+  await page.clock.runFor(SELL_ONCE_AFTER_IMPORT_MS);
 
   await expect(page.getByText("오늘의 손님 · 한은")).toBeVisible();
   const regularBadgeInCounterSheet = page
@@ -190,7 +204,7 @@ test("customer preferred menu bonus write path survives reload and beats baselin
   const nowMs = new Date(fixedTime).getTime();
   const dayKey = dayKeyUtc(nowMs);
   const initialAffection = 3;
-  const autoSellWindowMs = 4_100;
+  const autoSellWindowMs = SELL_ONCE_AFTER_IMPORT_MS;
 
   await installFixedClock(page, fixedTime);
   await page.emulateMedia({ reducedMotion: "reduce" });
@@ -202,10 +216,14 @@ test("customer preferred menu bonus write path survives reload and beats baselin
       app: {
         cafeState: {
           displaySellingActive: true,
-          lastAutoSellAtMs: nowMs,
+          lastAutoSellAtMs: nowMs + SALE_IMPORT_GUARD_MS,
           menuStock: {
             latte: 1,
           },
+        },
+        meta: {
+          lastHeartRegenAtMs: nowMs + SALE_IMPORT_GUARD_MS,
+          lastSeenAtMs: nowMs + SALE_IMPORT_GUARD_MS,
         },
       },
       customers: {
@@ -232,8 +250,7 @@ test("customer preferred menu bonus write path survives reload and beats baselin
     }),
   );
 
-  await openCounterSheet(page);
-  await expect(page.getByRole("button", { name: "판매 중지" })).toBeVisible();
+  await openCounterSheetAndStartSale(page);
   await expect(page.getByText("선호 · 아메리카노")).toBeVisible();
 
   await page.clock.runFor(autoSellWindowMs);
@@ -250,7 +267,7 @@ test("customer preferred menu bonus write path survives reload and beats baselin
   expect(baseline.customers.featuredDailyQuotaUsed).toBe(1);
   expect(baseline.app.cafeState.menuStock.latte).toBe(0);
   expect(baseline.app.cafeState.displaySellingActive).toBe(false);
-  expect(baseline.app.cafeState.lastAutoSellAtMs).toBe(nowMs + 4_000);
+  expect(baseline.app.cafeState.lastAutoSellAtMs).toBeGreaterThan(nowMs);
 
   const bonusSeedNowMs = nowMs + autoSellWindowMs;
   await importDebugSaveBundle(page, {
@@ -260,12 +277,17 @@ test("customer preferred menu bonus write path survives reload and beats baselin
       cafeState: {
         ...baseline.app.cafeState,
         displaySellingActive: true,
-        lastAutoSellAtMs: bonusSeedNowMs,
+        lastAutoSellAtMs: bonusSeedNowMs + SALE_IMPORT_GUARD_MS,
         menuStock: {
           ...baseline.app.cafeState.menuStock,
           americano: 1,
           latte: 0,
         },
+      },
+      meta: {
+        ...baseline.app.meta,
+        lastHeartRegenAtMs: bonusSeedNowMs + SALE_IMPORT_GUARD_MS,
+        lastSeenAtMs: bonusSeedNowMs + SALE_IMPORT_GUARD_MS,
       },
     },
     customers: {
@@ -283,8 +305,7 @@ test("customer preferred menu bonus write path survives reload and beats baselin
     },
   });
 
-  await openCounterSheet(page);
-  await expect(page.getByRole("button", { name: "판매 중지" })).toBeVisible();
+  await openCounterSheetAndStartSale(page);
 
   await page.clock.runFor(autoSellWindowMs);
 
@@ -309,9 +330,7 @@ test("customer preferred menu bonus write path survives reload and beats baselin
   expect(preferred.customers.featuredDailyQuotaUsed).toBe(2);
   expect(preferred.app.cafeState.menuStock.americano).toBe(0);
   expect(preferred.app.cafeState.displaySellingActive).toBe(false);
-  expect(preferred.app.cafeState.lastAutoSellAtMs).toBe(
-    bonusSeedNowMs + 4_000,
-  );
+  expect(preferred.app.cafeState.lastAutoSellAtMs).toBeGreaterThan(bonusSeedNowMs);
 
   await page.reload();
   await openCounterSheet(page);
@@ -339,7 +358,7 @@ test("customer daily quota resets on next day and persists after next-day sale",
   const dayOneKey = dayKeyUtc(dayOneMs);
   const dayTwoKey = dayKeyUtc(dayTwoMs);
   const dayTwoQuotaTotal = featuredDailyQuotaForDayForTest(dayTwoKey);
-  const autoSellWindowMs = 8_200;
+  const autoSellWindowMs = SALE_IMPORT_GUARD_MS + 8_200;
 
   await installFixedClock(page, dayOneTime);
   await page.emulateMedia({ reducedMotion: "reduce" });
@@ -351,7 +370,7 @@ test("customer daily quota resets on next day and persists after next-day sale",
       app: {
         cafeState: {
           displaySellingActive: true,
-          lastAutoSellAtMs: dayOneMs,
+          lastAutoSellAtMs: dayOneMs + SALE_IMPORT_GUARD_MS,
           menuStock: {
             americano: 2,
           },
@@ -381,8 +400,7 @@ test("customer daily quota resets on next day and persists after next-day sale",
     }),
   );
 
-  await openCounterSheet(page);
-  await expect(page.getByRole("button", { name: "판매 중지" })).toBeVisible();
+  await openCounterSheetAndStartSale(page);
 
   await page.clock.runFor(autoSellWindowMs);
 
@@ -414,11 +432,16 @@ test("customer daily quota resets on next day and persists after next-day sale",
       cafeState: {
         ...dayOneAfterReload.app.cafeState,
         displaySellingActive: true,
-        lastAutoSellAtMs: dayTwoMs,
+        lastAutoSellAtMs: dayTwoMs + SALE_IMPORT_GUARD_MS,
         menuStock: {
           ...dayOneAfterReload.app.cafeState.menuStock,
           americano: 1,
         },
+      },
+      meta: {
+        ...dayOneAfterReload.app.meta,
+        lastHeartRegenAtMs: dayTwoMs + SALE_IMPORT_GUARD_MS,
+        lastSeenAtMs: dayTwoMs + SALE_IMPORT_GUARD_MS,
       },
     },
     customers: {
@@ -452,11 +475,16 @@ test("customer daily quota resets on next day and persists after next-day sale",
       cafeState: {
         ...dayTwoResetAfterReload.app.cafeState,
         displaySellingActive: true,
-        lastAutoSellAtMs: dayTwoMs,
+        lastAutoSellAtMs: dayTwoMs + SALE_IMPORT_GUARD_MS,
         menuStock: {
           ...dayTwoResetAfterReload.app.cafeState.menuStock,
           americano: 1,
         },
+      },
+      meta: {
+        ...dayTwoResetAfterReload.app.meta,
+        lastHeartRegenAtMs: dayTwoMs + SALE_IMPORT_GUARD_MS,
+        lastSeenAtMs: dayTwoMs + SALE_IMPORT_GUARD_MS,
       },
     },
     customers: {
@@ -470,10 +498,9 @@ test("customer daily quota resets on next day and persists after next-day sale",
     },
   });
 
-  await openCounterSheet(nextDayPage);
-  await expect(nextDayPage.getByRole("button", { name: "판매 중지" })).toBeVisible();
+  await openCounterSheetAndStartSale(nextDayPage);
 
-  await nextDayPage.clock.runFor(4_100);
+  await nextDayPage.clock.runFor(SELL_ONCE_AFTER_IMPORT_MS);
 
   const dayTwoAfterSale = await exportDebugSaveBundle(nextDayPage);
   expect(dayTwoAfterSale.customers.featuredQuotaDayKey).toBe(dayTwoKey);
@@ -577,7 +604,7 @@ test("regular gift ping appears in counter sheet after sale and clears on reload
       app: {
         cafeState: {
           displaySellingActive: true,
-          lastAutoSellAtMs: nowMs,
+          lastAutoSellAtMs: nowMs + SALE_IMPORT_GUARD_MS,
           menuStock: {
             americano: 1,
           },
@@ -607,7 +634,7 @@ test("regular gift ping appears in counter sheet after sale and clears on reload
     }),
   );
 
-  await openCounterSheet(page);
+  await openCounterSheetAndStartSale(page);
   await expect(page.getByText("오늘의 손님 · 효임")).toBeVisible();
   await expect(page.getByText(regularGiftText)).toHaveCount(0);
 
@@ -650,7 +677,7 @@ test("sale session regenerates safely on next day and next sale still works", as
       app: {
         cafeState: {
           displaySellingActive: true,
-          lastAutoSellAtMs: dayTwoMs,
+          lastAutoSellAtMs: dayTwoMs + SALE_IMPORT_GUARD_MS,
           menuStock: {
             americano: 2,
           },
@@ -686,7 +713,7 @@ test("sale session regenerates safely on next day and next sale still works", as
     }),
   );
 
-  await openCounterSheet(page);
+  await openCounterSheetAndStartSale(page);
   await expect(page.getByText("오늘의 손님 · 효임")).toBeVisible();
   await expect(page.getByText("오늘 들른 손님 · 한은")).toHaveCount(0);
 

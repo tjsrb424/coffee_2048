@@ -78,7 +78,7 @@ export function OfflineSalesCard({ className }: { className?: string }) {
   };
 
   return (
-    <Card className={cn("p-4", className)}>
+    <Card className={cn("pointer-events-none p-4", className)}>
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0 flex-1">
           <div className="text-xs font-semibold uppercase tracking-wide text-coffee-600/60">
@@ -110,7 +110,7 @@ export function OfflineSalesCard({ className }: { className?: string }) {
           <Button
             type="button"
             variant="soft"
-            className="h-11 text-xs font-semibold"
+            className="pointer-events-auto h-11 text-xs font-semibold"
             disabled={isBusy}
             onClick={() => {
               lightTap();
@@ -124,7 +124,7 @@ export function OfflineSalesCard({ className }: { className?: string }) {
           <Button
             type="button"
             variant="ghost"
-            className="h-11 text-xs font-semibold"
+            className="pointer-events-auto h-11 text-xs font-semibold"
             disabled={isBusy || !adSupported}
             onClick={async () => {
               lightTap();

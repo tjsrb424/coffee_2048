@@ -435,11 +435,11 @@ export function LobbyScreen() {
           />
 
           <div
-            className="absolute left-1/2 z-40 flex w-[88%] max-w-[23rem] -translate-x-1/2 flex-col gap-2"
+            className="pointer-events-none absolute left-1/2 z-40 flex w-[88%] max-w-[23rem] -translate-x-1/2 flex-col gap-2"
             style={{ bottom: "calc(env(safe-area-inset-bottom) + 4.9rem)" }}
           >
             {!lobbyOnboardingSeen ? (
-              <div className="flex items-start gap-2 rounded-2xl bg-cream-50/80 px-3 py-2 ring-1 ring-accent-soft/20 backdrop-blur-[3px]">
+              <div className="pointer-events-auto flex items-start gap-2 rounded-2xl bg-cream-50/80 px-3 py-2 ring-1 ring-accent-soft/20 backdrop-blur-[3px]">
                 <p className="min-w-0 flex-1 text-xs leading-relaxed text-coffee-800">
                   {t("lobby.onboarding.hint")}
                 </p>
@@ -463,6 +463,7 @@ export function LobbyScreen() {
 
           {canUseLobbyDevTools ? (
             <button
+              data-visual-test-hidden="true"
               type="button"
               onClick={toggleLobbyOverlay}
               className="absolute left-3 z-[70] rounded-full bg-coffee-950/70 px-3 py-1.5 text-[11px] font-semibold text-cream-50 shadow-md backdrop-blur"
@@ -473,6 +474,7 @@ export function LobbyScreen() {
           ) : null}
           {canUseLobbyDevTools ? (
             <button
+              data-visual-test-hidden="true"
               type="button"
               onClick={() => setShowTuningPanel((v) => !v)}
               className="absolute left-3 z-[70] rounded-full bg-coffee-950/70 px-3 py-1.5 text-[11px] font-semibold text-cream-50 shadow-md backdrop-blur"

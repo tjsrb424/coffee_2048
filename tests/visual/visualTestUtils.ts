@@ -17,6 +17,10 @@ export async function prepareVisualPage(
         transition: none !important;
         caret-color: transparent !important;
       }
+      [data-visual-test-hidden="true"],
+      button[aria-label="Open Next.js Dev Tools"] {
+        display: none !important;
+      }
       ${
         lock
           ? `

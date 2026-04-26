@@ -83,7 +83,7 @@ test("puzzle reward to cafe sale loop survives reload", async ({ page }) => {
     await expect(resultDialog).toContainText("16");
     await expect(resultDialog).toContainText("8");
 
-    await resultDialog.getByRole("button", { name: "로비로" }).click();
+    await resultDialog.getByRole("button", { name: "기본 받기" }).click();
     await page.clock.runFor(250);
     await expect(page).toHaveURL(/\/lobby\/?$/);
   });
