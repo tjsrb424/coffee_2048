@@ -38,9 +38,9 @@ export const lobbyLayout: LobbyLayout = {
   shelfFrame: { x: -18, y: 296, width: 978, scale: 1, zIndex: 20 },
   roasterCard: { x: 42, y: 440, width: 425, scale: 1, zIndex: 30 },
   drinkStationCard: { x: 472, y: 440, width: 425, scale: 1, zIndex: 30 },
-  cashierCard: { x: 55, y: 820, width: 399, scale: 1, zIndex: 30 },
-  shopCard: { x: 488, y: 820, width: 399, scale: 1, zIndex: 30 },
-  playButton: { x: 160, y: 1267, width: 622, scale: 1, zIndex: 30 },
+  cashierCard: { x: 44, y: 912, width: 424, scale: 1, zIndex: 30 },
+  shopCard: { x: 472, y: 912, width: 420, scale: 1, zIndex: 30 },
+  playButton: { x: 76, y: 1313, width: 758, scale: 1, zIndex: 30 },
   currencyBar: { x: 160, y: 1530, width: 622, scale: 1, zIndex: 30 },
 };
 
