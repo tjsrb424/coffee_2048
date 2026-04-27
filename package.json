@@ -6,6 +6,7 @@
     "clean": "node -e \"try{require('fs').rmSync('.next',{recursive:true,force:true})}catch(e){}\"",
     "dev": "node scripts/dev-guard.js",
     "dev:clean": "npm run clean && next dev -H 0.0.0.0",
+    "dev:turbo": "npm run clean && next dev -H 0.0.0.0 --turbo",
     "dev:safe": "npm run check:tw && npm run dev:clean",
     "dev:guard": "node scripts/dev-guard.js",
     "build": "next build",

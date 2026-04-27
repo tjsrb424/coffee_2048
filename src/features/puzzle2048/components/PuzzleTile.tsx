@@ -90,6 +90,7 @@ export function PuzzleTile({ tile }: { tile: PlacedTile }) {
         "absolute left-0 top-0 flex select-none items-center justify-center rounded-xl font-bold tabular-nums will-change-transform sm:rounded-2xl",
         tileClassForValue(tile.value),
         puzzleTileClassForSkin(blockSkinId, tile.value),
+        "text-[#674831]",
         tileFontSize(tile.value, compact),
       )}
     >

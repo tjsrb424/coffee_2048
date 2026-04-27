@@ -143,9 +143,11 @@ export function DevDebugPanel({ className }: { className?: string }) {
     <div
       className={cn(
         // 루트는 클릭 통과: 고정 레이어가 투명 영역까지 포인터를 잡아 로비 버튼이 먹통이 되는 경우 방지
-        "pointer-events-none fixed bottom-3 left-3 z-40",
+        // 모바일 브라우저 하단 UI에 가려지지 않도록 좌상단 safe-area 근처에 고정
+        "pointer-events-none fixed left-3 z-[130]",
         className,
       )}
+      style={{ top: "calc(env(safe-area-inset-top) + 0.75rem)" }}
     >
       <div className="pointer-events-auto flex items-center gap-2">
         <button

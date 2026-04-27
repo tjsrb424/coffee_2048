@@ -109,7 +109,10 @@ function spawnDev() {
         return;
       }
       restartTimes.push(now);
-      log("\n[dev-guard] 청크/캐시 오류 감지 → .next 삭제 후 dev 재시작합니다...\n");
+      log(
+        "\n[dev-guard] 청크/캐시 오류 감지 → .next 삭제 후 dev 재시작합니다...\n" +
+          "(브라우저에만 뜬 __webpack_modules__ 오류면 탭에서 Ctrl+Shift+R 강력 새로고침도 시도)\n",
+      );
       killTree(child);
       rmNext();
       setTimeout(() => {

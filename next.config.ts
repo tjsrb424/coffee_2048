@@ -31,10 +31,13 @@ const nextConfig: NextConfig = {
   },
   images: { unoptimized: true },
   trailingSlash: true,
-  // Windows에서 dev 중 `.next` 매니페스트 경합(ENOENT/MODULE_NOT_FOUND) 완화
+  // Windows에서 `.next` 디스크 캐시 매니페스트 경합(ENOENT/MODULE_NOT_FOUND) 완화 목적이었으나,
+  // `cache: false`는 증분 빌드마다 청크/모듈 테이블이 흔들려 HMR 직후 브라우저에
+  // `__webpack_modules__[moduleId] is not a function`이 잘 난다.
+  // 메모리 캐시는 디스크 경합을 피하면서도 모듈 그래프 안정성이 더 낫다. 재발 시 `npm run clean`·강력 새로고침·`npm run dev:turbo`.
   webpack: (config, { dev }) => {
     if (dev) {
-      config.cache = false;
+      config.cache = { type: "memory" as const };
     }
     return config;
   },
