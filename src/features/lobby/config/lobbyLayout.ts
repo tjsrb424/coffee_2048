@@ -32,14 +32,21 @@ export type LobbyLayoutPatch = Partial<
 >;
 
 export const lobbyLayout: LobbyLayout = {
-  titleLogo: { x: 208, y: 100, width: 510, scale: 1, zIndex: 30 },
+  titleLogo: { x: 210, y: 72, width: 510, scale: 1, zIndex: 100 },
   tierBadge: { x: 44, y: 33, width: 159, scale: 1, zIndex: 40 },
   menuButton: { x: 801, y: 46, width: 116, scale: 1, zIndex: 40 },
-  shelfFrame: { x: -18, y: 296, width: 978, scale: 1, zIndex: 20 },
-  roasterCard: { x: 42, y: 440, width: 425, scale: 1, zIndex: 30 },
-  drinkStationCard: { x: 472, y: 440, width: 425, scale: 1, zIndex: 30 },
-  cashierCard: { x: 44, y: 912, width: 424, scale: 1, zIndex: 30 },
-  shopCard: { x: 472, y: 912, width: 420, scale: 1, zIndex: 30 },
+  shelfFrame: {
+    x: -78,
+    y: -328,
+    width: 978,
+    scale: 1.13,
+    zIndex: 31,
+    opacity: 1,
+  },
+  roasterCard: { x: 44, y: 415, width: 425, scale: 1, zIndex: 30 },
+  drinkStationCard: { x: 472, y: 417, width: 425, scale: 1, zIndex: 30 },
+  cashierCard: { x: 44, y: 894, width: 424, scale: 1, zIndex: 30 },
+  shopCard: { x: 472, y: 895, width: 420, scale: 1, zIndex: 30 },
   playButton: { x: 76, y: 1313, width: 758, scale: 1, zIndex: 30 },
   currencyBar: { x: 160, y: 1530, width: 622, scale: 1, zIndex: 30 },
 };

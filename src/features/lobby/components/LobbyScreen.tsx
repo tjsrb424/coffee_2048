@@ -149,8 +149,9 @@ export function LobbyScreen() {
     useState<LobbyLayout>(lobbyLayout);
   const [selectedLayoutKey, setSelectedLayoutKey] =
     useState<LobbyLayoutKey>("titleLogo");
-  const [showTuningPanel, setShowTuningPanel] = useState(false);
   const isNonProductionBuild = process.env.NODE_ENV !== "production";
+  const [showTuningPanel, setShowTuningPanel] =
+    useState(isNonProductionBuild);
   const [canUseLobbyDevTools, setCanUseLobbyDevTools] =
     useState(isNonProductionBuild);
 
@@ -162,6 +163,12 @@ export function LobbyScreen() {
     if (isNonProductionBuild) return;
     setCanUseLobbyDevTools(isLocalhostDevHost());
   }, [isNonProductionBuild]);
+
+  /** 프로덕션 빌드 + localhost에서만 dev 도구가 늦게 켜지므로, tune 패널도 그때 기본 켜기 */
+  useEffect(() => {
+    if (!canUseLobbyDevTools || isNonProductionBuild) return;
+    setShowTuningPanel(true);
+  }, [canUseLobbyDevTools, isNonProductionBuild]);
 
   useEffect(() => {
     if (!canUseLobbyDevTools || typeof window === "undefined") return;
@@ -480,7 +487,7 @@ export function LobbyScreen() {
               className="absolute left-3 z-[70] rounded-full bg-coffee-950/70 px-3 py-1.5 text-[11px] font-semibold text-cream-50 shadow-md backdrop-blur"
               style={{ top: "calc(env(safe-area-inset-top) + 7.35rem)" }}
             >
-              {showTuningPanel ? "Tune On" : "Tune Off"}
+              {showTuningPanel ? "Tune Off" : "Tune On"}
             </button>
           ) : null}
         </main>
