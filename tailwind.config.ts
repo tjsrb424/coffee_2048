@@ -29,8 +29,8 @@ const config: Config = {
       },
       fontFamily: {
         sans: [
+          "var(--font-gangwon-edu-all)",
           "GangwonEduAll",
-          "var(--font-sans)",
           "Malgun Gothic",
           "Apple SD Gothic Neo",
           "system-ui",

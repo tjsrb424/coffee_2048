@@ -177,6 +177,44 @@ export function WorkbenchTuningPanel({
           />
         </div>
 
+        <div className="mt-3 rounded-2xl bg-coffee-950/5 p-2 ring-1 ring-coffee-600/10">
+          <div className="text-[10px] font-black uppercase tracking-[0.16em] text-coffee-950/55">
+            Quick nudge
+          </div>
+          <div className="mt-2 grid grid-cols-4 gap-1.5">
+            <NudgeButton onClick={() => onLayoutItemChange(selectedKey, { x: selected.x - 10 })}>
+              x -10
+            </NudgeButton>
+            <NudgeButton onClick={() => onLayoutItemChange(selectedKey, { x: selected.x - 1 })}>
+              x -1
+            </NudgeButton>
+            <NudgeButton onClick={() => onLayoutItemChange(selectedKey, { x: selected.x + 1 })}>
+              x +1
+            </NudgeButton>
+            <NudgeButton onClick={() => onLayoutItemChange(selectedKey, { x: selected.x + 10 })}>
+              x +10
+            </NudgeButton>
+            <NudgeButton onClick={() => onLayoutItemChange(selectedKey, { y: selected.y - 10 })}>
+              y -10
+            </NudgeButton>
+            <NudgeButton onClick={() => onLayoutItemChange(selectedKey, { y: selected.y - 1 })}>
+              y -1
+            </NudgeButton>
+            <NudgeButton onClick={() => onLayoutItemChange(selectedKey, { y: selected.y + 1 })}>
+              y +1
+            </NudgeButton>
+            <NudgeButton onClick={() => onLayoutItemChange(selectedKey, { y: selected.y + 10 })}>
+              y +10
+            </NudgeButton>
+            <NudgeButton onClick={() => onLayoutItemChange(selectedKey, { zIndex: selected.zIndex - 1 })}>
+              z -1
+            </NudgeButton>
+            <NudgeButton onClick={() => onLayoutItemChange(selectedKey, { zIndex: selected.zIndex + 1 })}>
+              z +1
+            </NudgeButton>
+          </div>
+        </div>
+
         <div className="mt-3 flex flex-col gap-2">
           <button
             type="button"
@@ -215,6 +253,24 @@ export function WorkbenchTuningPanel({
         </label>
       </div>
     </div>
+  );
+}
+
+function NudgeButton({
+  onClick,
+  children,
+}: {
+  onClick: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="h-8 rounded-xl bg-cream-50/92 px-1.5 text-[10px] font-black text-coffee-950 ring-1 ring-coffee-600/12 active:scale-[0.98]"
+    >
+      {children}
+    </button>
   );
 }
 

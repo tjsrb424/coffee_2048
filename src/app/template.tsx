@@ -57,6 +57,9 @@ function shouldShowReadOnlyAdDebugPanel() {
 export default function Template({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const isNonProductionBuild = process.env.NODE_ENV !== "production";
+  const devDebugPanelClassName = pathname?.startsWith("/lobby/roaster")
+    ? "left-auto right-3"
+    : undefined;
   const [showDevDebugPanel, setShowDevDebugPanel] = useState(
     () => isNonProductionBuild || forceDevPanelFromEnv,
   );
@@ -77,7 +80,9 @@ export default function Template({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-[100dvh] w-full">
       {children}
-      {showDevDebugPanel ? <DevDebugPanel /> : null}
+      {showDevDebugPanel ? (
+        <DevDebugPanel className={devDebugPanelClassName} />
+      ) : null}
       {!showDevDebugPanel && showReadOnlyAdDebugPanel ? (
         <ReadOnlyAdDebugPanel />
       ) : null}

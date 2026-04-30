@@ -1,18 +1,10 @@
 "use client";
 
-import { DM_Sans } from "next/font/google";
 import { useEffect } from "react";
 import "./globals.css";
 
-const sans = DM_Sans({
-  subsets: ["latin"],
-  variable: "--font-sans",
-  display: "swap",
-});
-
 /**
- * 루트 레이아웃까지 올라온 오류용. 반드시 html/body를 포함한다.
- * (Cursor/API 등 외부 "토큰" 부족과 무관 — 브라우저 안에서 난 JS 오류입니다.)
+ * Root layout까지 올라가기 전에 발생한 오류도 html/body를 포함해야 합니다.
  */
 export default function GlobalError({
   error,
@@ -28,14 +20,14 @@ export default function GlobalError({
   const showDevHint = process.env.NODE_ENV !== "production";
 
   return (
-    <html lang="ko" className={sans.variable} suppressHydrationWarning>
+    <html lang="ko" suppressHydrationWarning>
       <body className="font-sans antialiased">
         <div className="mx-auto flex min-h-[100dvh] max-w-md flex-col items-center justify-center gap-5 bg-cream-100 px-6 pb-16 pt-10 text-center text-coffee-900">
           <p className="text-xs font-semibold uppercase tracking-[0.08em] text-coffee-600/60">
             Coffee 2048
           </p>
           <p className="text-sm leading-relaxed text-coffee-800">
-            화면을 불러오지 못했어요. 다시 시도하거나 앱을 새로고침해 주세요.
+            화면을 불러오지 못했어요. 다시 시도하거나 탭을 새로고침해 주세요.
           </p>
           {error.digest ? (
             <p className="text-[10px] tabular-nums text-coffee-600/50">
