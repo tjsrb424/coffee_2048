@@ -1,0 +1,168 @@
+--- a/src/features/lobby/components/CounterScreen.tsx
++++ b/src/features/lobby/components/CounterScreen.tsx
+@@ -14,14 +14,17 @@
+ import { t } from "@/locale/i18n";
+ import { cn } from "@/lib/utils";
+ import { useAppStore } from "@/stores/useAppStore";
+-import { useCustomerStore } from "@/stores/useCustomerStore";
++import {
++  type CustomerCounterSalePing,
++  type RegularGiftPing,
++  useCustomerStore,
++} from "@/stores/useCustomerStore";
+ 
+ type SaleDrinkItem = {
+   id: DrinkMenuId;
+   name: string;
+   imageSrc?: string;
+   stock: number;
+-  isSelected: boolean;
+   isAvailable: boolean;
+   sellPrice: number;
+ };
+@@ -87,6 +90,7 @@
+   const cafe = useAppStore((s) => s.cafeState);
+   const codex = useAppStore((s) => s.beverageCodex);
+   const startDisplaySelling = useAppStore((s) => s.startDisplaySelling);
++  const stopDisplaySelling = useAppStore((s) => s.stopDisplaySelling);
+   const displaySellingActive = cafe.displaySellingActive;
+   const menuStock = cafe.menuStock;
+   const totalStock = totalMenuStock(menuStock);
+@@ -96,15 +100,14 @@
+   const featuredProfile = useCustomerStore((s) => s.profile(featuredCustomerId));
+   const ensureFeaturedForToday = useCustomerStore((s) => s.ensureFeaturedForToday);
+   const ensureSaleSession = useCustomerStore((s) => s.ensureSaleSession);
++  const featuredRuntime = useCustomerStore((s) =>
++    s.stateOf(featuredCustomerId),
++  );
+   const lastCounterSalePing = useCustomerStore((s) => s.lastCounterSalePing);
++  const lastRegularGiftPing = useCustomerStore((s) => s.lastRegularGiftPing);
+   const saleSession = useCustomerStore((s) => s.saleSession);
+ 
+   const visibleDrinkIds = useMemo(() => visibleMenuOrder(codex), [codex]);
+-  const defaultSelectedIds = useMemo(
+-    () => visibleDrinkIds.filter((id) => menuStock[id] > 0).slice(0, 3),
+-    [menuStock, visibleDrinkIds],
+-  );
+-  const [selectedDrinkIds, setSelectedDrinkIds] = useState<DrinkMenuId[]>([]);
+   const [now, setNow] = useState(() => Date.now());
+ 
+   useEffect(() => {
+@@ -112,35 +115,31 @@
+   }, [ensureFeaturedForToday]);
+ 
+   useEffect(() => {
+-    if (selectedDrinkIds.length > 0) return;
+-    setSelectedDrinkIds(defaultSelectedIds);
+-  }, [defaultSelectedIds, selectedDrinkIds.length]);
+-
+-  useEffect(() => {
+     const timer = window.setInterval(() => setNow(Date.now()), 500);
+     return () => window.clearInterval(timer);
+   }, []);
+ 
+   const saleDrinks = useMemo<SaleDrinkItem[]>(
+     () =>
+-      visibleDrinkIds.slice(0, 6).map((id) => ({
++      visibleDrinkIds.map((id) => ({
+         id,
+         name: DRINK_NAMES[id],
+         imageSrc: DRINK_IMAGES[id],
+         stock: menuStock[id],
+-        isSelected: selectedDrinkIds.includes(id),
+         isAvailable: menuStock[id] > 0,
+         sellPrice: CAFE_ECONOMY.sellPrice[id] + runtime.sellBonus,
+       })),
+-    [menuStock, runtime.sellBonus, selectedDrinkIds, visibleDrinkIds],
++    [menuStock, runtime.sellBonus, visibleDrinkIds],
+   );
+ 
+-  const selectedSaleDrinks = useMemo(
++  const activeSaleDrinks = useMemo(
++    () => saleDrinks.filter((drink) => drink.stock > 0),
++    [saleDrinks],
++  );
++  const displayedSaleDrinks = useMemo(
+     () =>
+-      selectedDrinkIds
+-        .map((id) => saleDrinks.find((drink) => drink.id === id))
+-        .filter((drink): drink is SaleDrinkItem => Boolean(drink)),
+-    [saleDrinks, selectedDrinkIds],
++      (activeSaleDrinks.length > 0 ? activeSaleDrinks : saleDrinks).slice(0, 3),
++    [activeSaleDrinks, saleDrinks],
+   );
+ 
+   const featuredName = featuredProfile
+@@ -172,10 +171,25 @@
+   );
+ 
+   const recommendation = todaySlots[1] ?? todaySlots[0]!;
+-  const preparedCups = selectedSaleDrinks.reduce(
+-    (sum, drink) => sum + drink.stock,
+-    0,
+-  );
++  const featuredStoryTitle =
++    featuredProfile && featuredRuntime
++      ? featuredProfile.storySteps[
++          Math.min(
++            featuredRuntime.storyIndex,
++            Math.max(0, featuredProfile.storySteps.length - 1),
++          )
++        ]?.titleTextId
++        ? t(
++            featuredProfile.storySteps[
++              Math.min(
++                featuredRuntime.storyIndex,
++                Math.max(0, featuredProfile.storySteps.length - 1),
++              )
++            ]!.titleTextId,
++          )
++        : null
++      : null;
++  const preparedCups = totalStock;
+   const activeInterval = runtime.autoSellIntervalMs;
+   const cycleElapsed = displaySellingActive
+     ? Math.max(0, now - (cafe.lastAutoSellAtMs || now))
+@@ -188,36 +202,16 @@
+   const remainingSeconds = displaySellingActive
+     ? Math.max(0, Math.ceil((activeInterval - cycleElapsed) / 1000))
+     : 0;
+-  const canStartSale =
+-    selectedSaleDrinks.length > 0 &&
+-    preparedCups > 0 &&
+-    totalStock > 0 &&
+-    !displaySellingActive;
++  const canStartSale = totalStock > 0 && !displaySellingActive;
+   const completedSaleReady =
+     Boolean(lastCounterSalePing) &&
+     now - (lastCounterSalePing?.atMs ?? 0) < 15_000;
+ 
+-  const toggleDrink = (id: DrinkMenuId) => {
+-    if (displaySellingActive) return;
+-    const stock = menuStock[id] ?? 0;
+-    if (stock <= 0) return;
+-    setSelectedDrinkIds((current) => {
+-      if (current.includes(id)) {
+-        return current.filter((item) => item !== id);
+-      }
+-      if (current.length >= 3) {
+-        return [...current.slice(1), id];
+-      }
+-      return [...current, id];
+-    });
+-  };
+-
+-  const selectAvailableTopThree = () => {
+-    if (displaySellingActive) return;
+-    setSelectedDrinkIds(defaultSelectedIds);
+-  };
+-
+-  const handleStartSale = () => {
++  const handleSaleButton = () => {
++    if (displaySellingActive) {
++      stopDisplaySelling();
++      return;
++    }
+     if (!canStartSale) return;
+     const started = startDisplaySelling();
+     if (started) {
