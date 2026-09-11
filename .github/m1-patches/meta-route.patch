@@ -1,0 +1,24 @@
+--- a/tests/visual/meta-persistence.spec.ts
++++ b/tests/visual/meta-persistence.spec.ts
+@@ -186,10 +186,7 @@
+     }),
+   );
+ 
+-  await page.goto("/lobby");
+-  const counterTile = page.getByTestId("lobby-reference-tile-counter");
+-  await counterTile.scrollIntoViewIfNeeded();
+-  await counterTile.click();
++  await page.goto("/lobby/counter");
+ 
+   await expect(page.getByText("오늘의 손님 · 소연")).toBeVisible();
+   await expect(page.getByText("단골", { exact: true })).toBeVisible();
+@@ -198,9 +195,6 @@
+   const beforeReload = await exportDebugSaveBundle(page);
+ 
+   await page.reload();
+-  const reloadedCounterTile = page.getByTestId("lobby-reference-tile-counter");
+-  await reloadedCounterTile.scrollIntoViewIfNeeded();
+-  await reloadedCounterTile.click();
+ 
+   await expect(page.getByText("오늘의 손님 · 소연")).toBeVisible();
+   await expect(page.getByText("단골", { exact: true })).toBeVisible();
