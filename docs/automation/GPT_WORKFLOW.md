@@ -1,73 +1,130 @@
 # Coffee 2048 — GPT-Only Development Workflow
 
 ## 목적
-Coffee 2048 자동개발의 실행 주체는 **ChatGPT/GPT**다. Cursor는 필요하지 않다.
 
-사용자가 범위를 지정하면 GPT가 GitHub 저장소를 직접 다루며 그 범위의 작업을 끝까지 진행한다.
+Coffee 2048 자동개발의 실행 주체는 ChatGPT/GPT다.
+사용자가 승인한 마일스톤 범위 안에서 GPT가 connected GitHub를 직접 사용해 분석, 구현, 검증, PR, 보고까지 진행한다.
 
-## 동작 방식
+---
+
+## 기본 흐름
+
 사용자 지시 예:
 
 ```text
-M1~M3까지 개발하고 보고해.
+M1 진행해.
 ```
 
-GPT는 다음 순서로 직접 진행한다.
+또는:
 
-1. `DEV_QUEUE.md`의 ACTIVE/승인 범위 확인
-2. GitHub 저장소 분석
+```text
+M1~M2까지 개발하고 보고해.
+```
+
+GPT는:
+
+1. `PROJECT_RULES.md`, `DEV_QUEUE.md`, `ROADMAP.md` 확인
+2. current main/target branch 확인
 3. 기존 코드/UI/이미지 검색
-4. 작업용 branch 생성
-5. 승인 범위의 기획 세분화
-6. 시스템 구현
-7. 필요한 UI/UX 구현
-8. 필요 시 이미지 신규 제작/교체
-9. 회귀 점검
-10. GitHub Actions/CI로 lint·typecheck·build·visual test 확인
-11. 커밋/PR 생성
-12. 완료보고
-13. 사용자가 실제 플레이 검수
+4. 작업 branch 생성
+5. 승인 범위 세분화
+6. domain source-of-truth 먼저 확인
+7. 코드 구현
+8. 필요한 UI/UX 구현
+9. 기존 asset 비교
+10. 품질 향상이 명확하면 신규 이미지 생성/적용
+11. regression test 추가/수정
+12. GitHub Actions 실행
+13. 실패 원인 수정
+14. commit/PR 생성 또는 기존 PR 갱신
+15. 완료보고
 
-## 자동의 의미
-여기서 자동개발은 백그라운드에서 무기한 실행된다는 뜻이 아니다.
-사용자가 한 번 작업 범위를 지시하면 **그 요청 안에서 GPT가 세부 구현 결정을 반복해서 묻지 않고 가능한 범위를 끝까지 수행한다**는 뜻이다.
+---
 
-예:
-- 사용자가 `M2까지 개발`이라고 하면 버튼 하나마다 허락을 받지 않는다.
-- 승인 범위 안에서 필요한 컴포넌트/상태/UI/테스트/이미지 자산은 GPT가 판단한다.
-- 제품 방향을 바꾸는 결정만 사용자에게 다시 요청한다.
+## 현재 단계
+
+M0 재인수는 완료됐다.
+
+결과:
+
+- `docs/automation/M0_REENTRY_REPORT.md`
+
+다음 권장 단계:
+
+- `M1 — 1.0 기준선 복구 및 Source-of-Truth 정렬`
+
+M1에서는 새 콘텐츠를 만들지 않고 현재 최신 UI와 실제 game-domain state를 일치시키고 CI를 복구한다.
+
+---
 
 ## GPT의 자율 판단 범위
-승인 마일스톤 안에서:
-- 세부 컴포넌트
-- 상태 UI
-- 모바일 UX
-- 마이크로인터랙션
-- 작은 리팩터링
-- 테스트
-- 필요한 이미지 신규 제작/교체
 
-을 스스로 결정할 수 있다.
+승인 마일스톤 안에서 별도 질문 없이 진행 가능:
 
-## 사용자 결정이 필요한 경우
-- 핵심 루프 변경
-- 세이브 호환성 파괴
-- 대규모 아키텍처 교체
-- 주요 화면 방향 폐기
-- 기존 콘텐츠 대량 삭제
-- 유료 서비스/API 필요
+- component 추가/정리
+- current UI state 연결
+- loading/empty/disabled/error state
+- responsive/mobile UX
+- micro interaction
+- small safe refactor
+- test 추가/수정
+- asset reuse/polish
+- 품질 향상이 명확한 신규 이미지 생성/적용
+- lint/type/build/test 오류 수정
 
-이 경우 구현을 중단하고 `DECISION REQUIRED`로 보고한다.
+---
 
-## 비용
-자동개발 파이프라인 자체에서 별도 OpenAI API 키를 사용하지 않는다.
+## Decision Gate
 
-- GPT/ChatGPT: 현재 사용 중인 제품 기능
-- GitHub: 연결된 저장소 작업
-- GitHub Actions: 테스트/빌드 전용
+다음은 자동 진행하지 않는다.
 
-## M0
-M0 재인수도 GPT가 직접 수행한다.
-사용자가 다른 에디터나 AI에게 전달할 필요가 없다.
+- core gameplay loop 변경
+- save compatibility 파괴
+- offline economy semantics 변경
+- 대규모 architecture replacement
+- 주요 콘텐츠 대량 삭제
+- 승인 마일스톤을 넘어서는 feature
+- 유료 외부 API/service 필요
 
-M0에서는 제품 코드를 수정하지 않고 `M0_REENTRY_REPORT.md`를 작성한다.
+이 경우:
+
+```md
+# DECISION REQUIRED
+## 현재 작업
+## 문제
+## 선택지
+## 추천
+## 영향
+```
+
+형식으로 사용자에게 보고한다.
+
+---
+
+## 검증
+
+프로젝트 기존 CI를 우선 사용한다.
+
+현재 기본 gate:
+
+```bash
+npm run lint
+npm run typecheck
+npm run build
+npm run test:visual
+```
+
+Playwright가 UI copy/layout 변경으로 깨진 경우 테스트를 단순 삭제하지 않는다.
+실제 state/persistence/economy assertion은 유지하고 현재 UI 계약만 갱신한다.
+
+---
+
+## 비용 원칙
+
+GPT 자동개발 체계 자체에서 별도 OpenAI API key를 사용하지 않는다.
+
+- ChatGPT/GPT: 현재 제품 기능
+- GitHub connector: repo 작업
+- GitHub Actions: 비-AI build/test
+
+추가 과금 외부 AI/API가 필요해지면 자동 진행하지 않는다.
