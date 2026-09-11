@@ -1,0 +1,38 @@
+name: M1 Source Snapshot
+
+on:
+  push:
+    branches:
+      - automation/m1-source-of-truth
+    paths:
+      - .github/workflows/m1-source-snapshot.yml
+
+jobs:
+  snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Upload text source snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: m1-source-snapshot
+          retention-days: 1
+          include-hidden-files: true
+          path: |
+            src
+            tests
+            locale
+            data
+            docs/automation
+            .github/workflows
+            package.json
+            package-lock.json
+            tsconfig.json
+            next.config.*
+            playwright.config.*
+            tailwind.config.*
+            postcss.config.*
+            eslint.config.*
+            AGENTS.md
