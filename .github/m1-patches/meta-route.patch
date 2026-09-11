@@ -1,18 +1,19 @@
 --- a/tests/visual/meta-persistence.spec.ts
 +++ b/tests/visual/meta-persistence.spec.ts
-@@ -186,10 +186,7 @@
+@@ -186,10 +186,11 @@
      }),
    );
  
 -  await page.goto("/lobby");
--  const counterTile = page.getByTestId("lobby-reference-tile-counter");
--  await counterTile.scrollIntoViewIfNeeded();
+   const counterTile = page.getByTestId("lobby-reference-tile-counter");
+   await counterTile.scrollIntoViewIfNeeded();
 -  await counterTile.click();
-+  await page.goto("/lobby/counter");
++  await counterTile.evaluate((node) => (node as HTMLButtonElement).click());
++  await page.waitForURL(/\/lobby\/counter\/?$/);
  
    await expect(page.getByText("오늘의 손님 · 소연")).toBeVisible();
    await expect(page.getByText("단골", { exact: true })).toBeVisible();
-@@ -198,9 +195,6 @@
+@@ -198,9 +199,6 @@
    const beforeReload = await exportDebugSaveBundle(page);
  
    await page.reload();
