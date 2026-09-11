@@ -1,6 +1,6 @@
 --- a/tests/visual/customer-sale-flow.spec.ts
 +++ b/tests/visual/customer-sale-flow.spec.ts
-@@ -592,8 +592,8 @@
+@@ -592,7 +592,7 @@
    const fixedTime = "2026-04-21T20:00:00";
    const nowMs = new Date(fixedTime).getTime();
    const dayKey = dayKeyUtc(nowMs);
@@ -9,7 +9,7 @@
    const regularGiftText = "효임이 다음엔 더 달콤한 걸로요 · +3코인";
  
    await installFixedClock(page, fixedTime);
-@@ -640,7 +640,7 @@
+@@ -640,6 +640,6 @@
    await expect(page.getByText("오늘의 손님 · 효임")).toBeVisible();
    await expect(page.getByText(regularGiftText)).toHaveCount(0);
  
