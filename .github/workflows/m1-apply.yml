@@ -35,6 +35,7 @@ jobs:
             .github/m1-patches/counter-03.patch \
             .github/m1-patches/counter-04.patch \
             .github/m1-patches/roaster.patch \
+            .github/m1-patches/codex-display-name.patch \
             .github/m1-patches/recipe-ownership.patch \
             .github/m1-patches/recipe-codex-dom.patch \
             .github/m1-patches/customer-route.patch \
@@ -54,6 +55,7 @@ jobs:
             src/features/lobby/components/WorkbenchRecipeScreen.tsx
             src/features/lobby/components/CounterScreen.tsx
             src/features/lobby/components/RoastingScreen.tsx
+            src/features/codex/components/BeverageCodexScreen.tsx
             tests/visual/recipe-ownership.spec.ts
             tests/visual/station-source-of-truth.spec.ts
             tests/visual/customer-sale-flow.spec.ts
