@@ -1,0 +1,114 @@
+--- /dev/null
++++ b/tests/visual/station-source-of-truth.spec.ts
+@@ -0,0 +1,111 @@
++import { expect, test } from "@playwright/test";
++import {
++  buildAccountLevelState,
++  buildDebugSaveBundle,
++  importDebugSaveBundle,
++  installFixedClock,
++} from "./ownershipTestUtils";
++
++test.describe.configure({ mode: "serial" });
++
++test("workbench reads recipes and shortages from the real economy state", async ({
++  page,
++}) => {
++  const fixedTime = "2026-04-21T12:00:00";
++  const nowMs = new Date(fixedTime).getTime();
++  await installFixedClock(page, fixedTime);
++  await page.emulateMedia({ reducedMotion: "reduce" });
++
++  await importDebugSaveBundle(
++    page,
++    buildDebugSaveBundle({
++      nowMs,
++      app: {
++        playerResources: {
++          beans: 0,
++        },
++        cafeState: {
++          espressoShots: 0,
++          materialInventory: {
++            milk: 0,
++          },
++        },
++        accountLevel: buildAccountLevelState({
++          level: 3,
++          nowMs,
++          unlockedRecipeIds: ["americano", "latte", "affogato"],
++          purchasedRecipeIds: ["americano", "latte", "affogato"],
++        }),
++      },
++    }),
++  );
++
++  await page.goto("/lobby/workbench");
++
++  await expect(page.getByRole("button", { name: "아메리카노 선택" })).toBeVisible();
++  await expect(page.getByRole("button", { name: "카페 라떼 선택" })).toBeVisible();
++  await expect(page.getByRole("button", { name: "아포가토 선택" })).toBeVisible();
++
++  // M1: 화면 전용 mock 레시피는 실제 제작 목록에 섞이지 않는다.
++  await expect(page.getByRole("button", { name: "바닐라 라떼 선택" })).toHaveCount(0);
++  await expect(page.getByRole("button", { name: "너티 클라우드 선택" })).toHaveCount(0);
++
++  await page.getByRole("button", { name: "카페 라떼 선택" }).click();
++  await expect(page.getByText("에스프레소 샷이 부족해요 · 0/1")).toBeVisible();
++  await expect(page.getByRole("button", { name: "카페 라떼 1잔 제작" })).toBeDisabled();
++});
++
++test("counter exposes real stock and controls the actual auto-sale session", async ({
++  page,
++}) => {
++  const fixedTime = "2026-04-21T15:30:00";
++  const nowMs = new Date(fixedTime).getTime();
++  await installFixedClock(page, fixedTime);
++  await page.emulateMedia({ reducedMotion: "reduce" });
++
++  await importDebugSaveBundle(
++    page,
++    buildDebugSaveBundle({
++      nowMs,
++      app: {
++        cafeState: {
++          displaySellingActive: false,
++          lastAutoSellAtMs: 0,
++          menuStock: {
++            americano: 1,
++            latte: 2,
++          },
++        },
++      },
++      customers: {
++        featuredCustomerId: "han_eun",
++      },
++    }),
++  );
++
++  await page.goto("/lobby/counter");
++
++  await expect(page.getByText("판매 가능 2종")).toBeVisible();
++  await expect(page.getByText("오늘의 손님 · 한은")).toBeVisible();
++  await expect(page.getByText("선호 · 아메리카노")).toBeVisible();
++  await expect(page.getByText("판매 음료 선택")).toHaveCount(0);
++
++  const saleButton = page.getByRole("button", { name: "판매 개시" });
++  await expect(saleButton).toBeEnabled();
++  await saleButton.click();
++  await expect(page.getByRole("button", { name: "판매 중지" })).toBeVisible();
++});
++
++test("roaster clearly distinguishes flavor presets from 1.0 economy effects", async ({
++  page,
++}) => {
++  await page.goto("/lobby/roaster");
++
++  await expect(page.getByText("향미 프리셋").first()).toBeVisible();
++  await expect(
++    page.getByText(
++      "향미/시간 프리셋은 연출용이며 1.0의 원두 비용과 샷 산출은 동일해요.",
++    ),
++  ).toBeVisible();
++  await expect(page.getByText("로스팅 시간")).toBeVisible();
++});
