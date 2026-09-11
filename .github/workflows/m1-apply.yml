@@ -10,7 +10,7 @@ on:
 permissions:
   contents: write
 
-# Retry after restoring the validated meta persistence patch.
+# Final retry with route-aware customer-sale helper.
 jobs:
   apply-and-validate:
     runs-on: ubuntu-latest
