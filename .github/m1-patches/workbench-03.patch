@@ -1,0 +1,167 @@
+--- a/src/features/lobby/components/WorkbenchRecipeScreen.tsx
++++ b/src/features/lobby/components/WorkbenchRecipeScreen.tsx
+@@ -318,15 +321,71 @@
+ export function WorkbenchRecipeScreen() {
+   useResetDocumentScrollOnMount();
+ 
+-  const shots = useAppStore((s) => s.cafeState.espressoShots);
++  const beans = useAppStore((s) => s.playerResources.beans);
++  const cafe = useAppStore((s) => s.cafeState);
++  const shots = cafe.espressoShots;
++  const accountLevel = useAppStore((s) => s.accountLevel);
++  const beverageCodex = useAppStore((s) => s.beverageCodex);
+   const craftDrink = useAppStore((s) => s.craftDrink);
++  const account = useMemo(
++    () => normalizeAccountLevelState(accountLevel),
++    [accountLevel],
++  );
++  const recipes = useMemo<WorkbenchRecipe[]>(
++    () =>
++      visibleMenuOrder(beverageCodex).map((id) => {
++        const recipe = recipeDefinition(id);
++        const validation = validateCraftDrink({
++          id,
++          account,
++          beverageCodex,
++          cafeState: cafe,
++          beans,
++        });
++        const visual = recipeVisualMeta[id];
++        const materials: MaterialPreview[] = [
++          {
++            name: "에스프레소 샷",
++            have: shots,
++            need: recipe.shots,
++            icon: "☕",
++          },
++          ...(Object.entries(recipe.materials) as Array<[MaterialId, number]>).map(
++            ([materialId, need]) => ({
++              name: materialDefinition(materialId).name,
++              have: cafe.materialInventory[materialId] ?? 0,
++              need,
++              icon: materialIcons[materialId] ?? "•",
++            }),
++          ),
++        ];
++
++        return {
++          id,
++          craftId: id,
++          name: drinkMenuName(id, t),
++          description: drinkMenuDescription(id, t),
++          category: visual.category,
++          tag: visual.tag,
++          stockReady: validation.canCraft,
++          imageSrc: drinkImages[id],
++          materials,
++          blockReason: workbenchBlockReason({
++            id,
++            validation,
++            shots,
++            beans,
++          }),
++        };
++      }),
++    [account, beans, beverageCodex, cafe, shots],
++  );
++
+   const [selectedCategory, setSelectedCategory] =
+     useState<RecipeCategory>("all");
+   const [craftableOnly, setCraftableOnly] = useState(false);
+-  const [selectedRecipeId, setSelectedRecipeId] = useState(
+-    recipes.find((recipe) => recipe.stockReady)?.id ?? recipes[0].id,
+-  );
+-  const [craftCount, setCraftCount] = useState(1);
++  const [selectedRecipeId, setSelectedRecipeId] =
++    useState<DrinkMenuId>("americano");
+ 
+   const isNonProductionBuild = process.env.NODE_ENV !== "production";
+   const [canUseWorkbenchDevTools, setCanUseWorkbenchDevTools] =
+@@ -429,20 +488,17 @@
+ 
+   useEffect(() => {
+     if (!visibleRecipes.some((recipe) => recipe.id === selectedRecipeId)) {
+-      setSelectedRecipeId(visibleRecipes[0]?.id ?? recipes[0].id);
++      setSelectedRecipeId(visibleRecipes[0]?.id ?? recipes[0]?.id ?? "americano");
+     }
+   }, [selectedRecipeId, visibleRecipes]);
+ 
+   const selectedRecipe =
+-    recipes.find((recipe) => recipe.id === selectedRecipeId) ?? recipes[0];
++    recipes.find((recipe) => recipe.id === selectedRecipeId) ??
++    recipes[0];
+ 
+   const craftSelectedRecipe = () => {
+-    if (!selectedRecipe.stockReady) return;
+-    if (selectedRecipe.craftId) {
+-      const didCraft = craftDrink(selectedRecipe.craftId);
+-      if (!didCraft) return;
+-    }
+-    setCraftCount(1);
++    if (!selectedRecipe?.stockReady) return;
++    craftDrink(selectedRecipe.craftId);
+   };
+ 
+   return (
+@@ -495,7 +551,7 @@
+         </WorkbenchLayoutSlot>
+ 
+         <WorkbenchLayoutSlot item={tunedLayout.shotHud}>
+-          <ShotHud shots={shots} />
++          <ShotHud shots={shots} beans={beans} />
+         </WorkbenchLayoutSlot>
+ 
+         <WorkbenchLayoutSlot item={tunedLayout.categoryTabs}>
+@@ -527,14 +583,13 @@
+         </WorkbenchLayoutSlot>
+ 
+         <WorkbenchLayoutSlot item={tunedLayout.bottomPanel} anchor="bottom">
+-          <SelectedRecipePanel
+-            recipe={selectedRecipe}
+-            craftCount={craftCount}
+-            onDec={() => setCraftCount((value) => Math.max(1, value - 1))}
+-            onInc={() => setCraftCount((value) => Math.min(99, value + 1))}
+-            onCraft={craftSelectedRecipe}
+-            layout={tunedLayout}
+-          />
++          {selectedRecipe ? (
++            <SelectedRecipePanel
++              recipe={selectedRecipe}
++              onCraft={craftSelectedRecipe}
++              layout={tunedLayout}
++            />
++          ) : null}
+         </WorkbenchLayoutSlot>
+ 
+         {canUseWorkbenchDevTools ? (
+@@ -564,7 +619,7 @@
+   );
+ }
+ 
+-function ShotHud({ shots }: { shots: number }) {
++function ShotHud({ shots, beans }: { shots: number; beans: number }) {
+   return (
+     <div
+       className="flex h-full w-full items-center justify-center gap-3 rounded-full border border-white/35 bg-[#fff7ea]/42 px-3 backdrop-blur-md"
+@@ -572,13 +627,17 @@
+         boxShadow:
+           "inset 0 1px 0 rgb(255 255 255 / 0.65), 0 4px 10px rgb(84 53 30 / 0.12)",
+       }}
++      aria-label={`에스프레소 샷 ${shots}, 원두 ${beans}`}
+     >
+-      <span className="grid h-9 w-9 place-items-center rounded-full bg-[#f8ead6]/80 text-[20px] shadow-inner ring-1 ring-[#c79b6d]/25">
+-        ☕
+-      </span>
+-      <span className="text-[20px] font-black tabular-nums text-[#6a482d] drop-shadow-[0_1px_0_rgb(255_255_255_/_0.7)]">
++      <span className="inline-flex items-center gap-1.5 text-[16px] font-black tabular-nums text-[#6a482d]">
++        <span aria-hidden>☕</span>
+         {shots.toLocaleString()}
+       </span>
++      <span className="h-5 w-px bg-[#b9916c]/35" />
++      <span className="inline-flex items-center gap-1.5 text-[16px] font-black tabular-nums text-[#6a482d]">
++        <span aria-hidden>🫘</span>
++        {beans.toLocaleString()}
++      </span>
+     </div>
+   );
+ }
