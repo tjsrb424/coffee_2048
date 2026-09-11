@@ -1,0 +1,135 @@
+--- a/src/features/lobby/components/CounterScreen.tsx
++++ b/src/features/lobby/components/CounterScreen.tsx
+@@ -239,32 +233,38 @@
+           slots={todaySlots}
+           recommendation={recommendation}
+           customerName={featuredName}
++          preferredMenuName={DRINK_NAMES[preferredMenu]}
++          isRegular={featuredRuntime?.isRegular ?? false}
++          storyTitle={featuredStoryTitle}
+         />
+ 
+         <SaleDrinkSelectionPanel
+-          drinks={saleDrinks.slice(0, 3)}
+-          selectedCount={selectedSaleDrinks.length}
++          drinks={displayedSaleDrinks}
++          activeDrinkCount={activeSaleDrinks.length}
+           isSelling={displaySellingActive}
+-          onToggleDrink={toggleDrink}
+-          onOpenPicker={selectAvailableTopThree}
+         />
+ 
+         <StartSaleButton
+           isSelling={displaySellingActive}
+           canStart={canStartSale}
+-          completedReady={completedSaleReady}
+-          onClick={handleStartSale}
++          onClick={handleSaleButton}
+         />
+ 
+         <SellingStatusPanel
+           isSelling={displaySellingActive}
+-          drinks={selectedSaleDrinks}
++          drinks={activeSaleDrinks}
+           preparedCups={preparedCups}
+           remainingSeconds={remainingSeconds}
+           progressPercent={progressPercent}
+           sessionGuestCount={saleSession?.queue.length ?? 0}
+           completedSaleReady={completedSaleReady}
+         />
++
++        <CounterFeedback
++          now={now}
++          salePing={lastCounterSalePing}
++          regularGiftPing={lastRegularGiftPing}
++        />
+       </main>
+ 
+       <CounterBottomActions completedReady={completedSaleReady} />
+@@ -408,10 +408,16 @@
+   slots,
+   recommendation,
+   customerName,
++  preferredMenuName,
++  isRegular,
++  storyTitle,
+ }: {
+   slots: TodayCustomerSlot[];
+   recommendation: TodayCustomerSlot;
+   customerName: string;
++  preferredMenuName: string;
++  isRegular: boolean;
++  storyTitle: string | null;
+ }) {
+   return (
+     <section
+@@ -451,6 +457,9 @@
+       <TodayCustomersPanel
+         slots={slots}
+         customerName={customerName}
++        preferredMenuName={preferredMenuName}
++        isRegular={isRegular}
++        storyTitle={storyTitle}
+       />
+     </section>
+   );
+@@ -459,9 +468,15 @@
+ function TodayCustomersPanel({
+   slots,
+   customerName,
++  preferredMenuName,
++  isRegular,
++  storyTitle,
+ }: {
+   slots: TodayCustomerSlot[];
+   customerName: string;
++  preferredMenuName: string;
++  isRegular: boolean;
++  storyTitle: string | null;
+ }) {
+   return (
+     <aside
+@@ -472,8 +487,23 @@
+       <div className="mb-2">
+         <p className="text-sm font-black text-[#513521]">오늘의 손님</p>
+         <p className="line-clamp-1 text-[11px] font-bold text-[#7c5c3d]">
+-          {customerName} 방문 예정
++          오늘의 손님 · {customerName}
+         </p>
++        <div className="mt-1 flex flex-wrap gap-1">
++          <span className="rounded-full bg-[#f3e1bf] px-1.5 py-0.5 text-[9px] font-black text-[#76563b]">
++            선호 · {preferredMenuName}
++          </span>
++          {isRegular ? (
++            <span className="rounded-full bg-[#dcefdc] px-1.5 py-0.5 text-[9px] font-black text-[#4f7654]">
++              단골
++            </span>
++          ) : null}
++        </div>
++        {storyTitle ? (
++          <p className="mt-1 line-clamp-1 text-[9px] font-bold text-[#8a694b]">
++            {storyTitle}
++          </p>
++        ) : null}
+       </div>
+       <div className="space-y-1.5">
+         {slots.map((slot) => (
+@@ -514,16 +544,12 @@
+ 
+ function SaleDrinkSelectionPanel({
+   drinks,
+-  selectedCount,
++  activeDrinkCount,
+   isSelling,
+-  onToggleDrink,
+-  onOpenPicker,
+ }: {
+   drinks: SaleDrinkItem[];
+-  selectedCount: number;
++  activeDrinkCount: number;
+   isSelling: boolean;
+-  onToggleDrink: (id: DrinkMenuId) => void;
+-  onOpenPicker: () => void;
+ }) {
+   return (
+     <section
