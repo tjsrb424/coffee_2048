@@ -10,7 +10,7 @@ on:
 permissions:
   contents: write
 
-# Final retry with route-aware customer-sale helper.
+# Validate M1 after aligning the regular-gift test with the 60s import guard.
 jobs:
   apply-and-validate:
     runs-on: ubuntu-latest
@@ -40,6 +40,7 @@ jobs:
             .github/m1-patches/recipe-ownership.patch \
             .github/m1-patches/recipe-codex-dom.patch \
             .github/m1-patches/customer-route.patch \
+            .github/m1-patches/customer-gift-timing.patch \
             .github/m1-patches/meta-route.patch \
             .github/m1-patches/station-source-of-truth.patch
           do
