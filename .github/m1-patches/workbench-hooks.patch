@@ -1,0 +1,19 @@
+--- a/src/features/lobby/components/WorkbenchRecipeScreen.tsx
++++ b/src/features/lobby/components/WorkbenchRecipeScreen.tsx
+@@ -483,14 +483,14 @@
+         const craftableMatches = !craftableOnly || recipe.stockReady;
+         return categoryMatches && craftableMatches;
+       }),
+-    [craftableOnly, selectedCategory],
++    [craftableOnly, recipes, selectedCategory],
+   );
+ 
+   useEffect(() => {
+     if (!visibleRecipes.some((recipe) => recipe.id === selectedRecipeId)) {
+       setSelectedRecipeId(visibleRecipes[0]?.id ?? recipes[0]?.id ?? "americano");
+     }
+-  }, [selectedRecipeId, visibleRecipes]);
++  }, [recipes, selectedRecipeId, visibleRecipes]);
+ 
+   const selectedRecipe =
+     recipes.find((recipe) => recipe.id === selectedRecipeId) ??
