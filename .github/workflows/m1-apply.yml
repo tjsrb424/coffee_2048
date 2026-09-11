@@ -10,7 +10,7 @@ on:
 permissions:
   contents: write
 
-# Validate M1 after aligning the regular-gift test with the 60s import guard.
+# Validate M1 after fixing the regular-gift seed to remain on the active sale day.
 jobs:
   apply-and-validate:
     runs-on: ubuntu-latest
