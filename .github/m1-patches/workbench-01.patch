@@ -1,0 +1,50 @@
+--- a/src/features/lobby/components/WorkbenchRecipeScreen.tsx
++++ b/src/features/lobby/components/WorkbenchRecipeScreen.tsx
+@@ -10,7 +10,16 @@
+   useState,
+ } from "react";
+ import { FrameExternalOverlayPortal } from "@/components/dev/FrameExternalOverlayPortal";
+-import type { DrinkMenuId } from "@/features/meta/types/gameState";
++import {
++  drinkMenuDescription,
++  drinkMenuName,
++} from "@/data/drinkMenuTextIds";
++import { visibleMenuOrder } from "@/features/meta/balance/cafeEconomy";
++import { validateCraftDrink } from "@/features/meta/economy/crafting";
++import { materialDefinition } from "@/features/meta/economy/materials";
++import { recipeDefinition } from "@/features/meta/economy/recipes";
++import { normalizeAccountLevelState } from "@/features/meta/progression/missionEngine";
++import type { DrinkMenuId, MaterialId } from "@/features/meta/types/gameState";
+ import {
+   WORKBENCH_LAYOUT_BASE,
+   workbenchLayout,
+@@ -20,6 +29,7 @@
+   type WorkbenchLayoutKey,
+ } from "@/features/lobby/config/workbenchLayout";
+ import { useResetDocumentScrollOnMount } from "@/hooks/useResetDocumentScrollOnMount";
++import { t } from "@/locale/i18n";
+ import { publicAssetPath } from "@/lib/publicAssetPath";
+ import { cn } from "@/lib/utils";
+ import { useAppStore } from "@/stores/useAppStore";
+@@ -42,7 +52,7 @@
+ };
+ 
+ type WorkbenchRecipe = {
+-  id: string;
++  id: DrinkMenuId;
+   name: string;
+   category: Exclude<RecipeCategory, "all">;
+   tag: string;
+@@ -50,9 +60,10 @@
+   stockReady: boolean;
+   isNew?: boolean;
+   isFavorite?: boolean;
+-  craftId?: DrinkMenuId;
+-  imageSrc: string;
++  craftId: DrinkMenuId;
++  imageSrc?: string;
+   materials: MaterialPreview[];
++  blockReason?: string;
+ };
+ 
+ const ASSET_BASE = "/assets/drinkstation" as const;
