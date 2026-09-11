@@ -1,0 +1,185 @@
+--- a/src/features/lobby/components/WorkbenchRecipeScreen.tsx
++++ b/src/features/lobby/components/WorkbenchRecipeScreen.tsx
+@@ -127,100 +138,92 @@
+   { key: "special", label: "스페셜" },
+ ];
+ 
+-const drinkImages = {
++const drinkImages: Partial<Record<DrinkMenuId, string>> = {
+   americano: "/images/optimized/drink/아메리카노.webp",
+   latte: "/images/optimized/drink/카페라떼.webp",
+   affogato: "/images/optimized/drink/아포가토.webp",
+-} as const;
++};
+ 
+-const recipes: WorkbenchRecipe[] = [
+-  {
+-    id: "americano",
+-    name: "아메리카노",
+-    category: "base",
+-    tag: "기본",
+-    description: "깔끔한 에스프레소와 물의 산뜻한 균형.",
+-    stockReady: true,
+-    craftId: "americano",
+-    imageSrc: drinkImages.americano,
+-    materials: [
+-      { name: "원두", have: 12, need: 1, icon: "☕" },
+-      { name: "물", have: 24, need: 1, icon: "💧" },
+-    ],
+-  },
+-  {
+-    id: "latte",
+-    name: "카페 라떼",
+-    category: "milk",
+-    tag: "우유",
+-    description: "부드러운 우유와 에스프레소의 완벽한 밸런스.",
+-    stockReady: true,
+-    isFavorite: true,
+-    craftId: "latte",
+-    imageSrc: drinkImages.latte,
+-    materials: [
+-      { name: "원두", have: 12, need: 1, icon: "☕" },
+-      { name: "우유", have: 18, need: 1, icon: "🥛" },
+-    ],
+-  },
+-  {
+-    id: "vanilla-latte",
+-    name: "바닐라 라떼",
+-    category: "sweet",
+-    tag: "달콤",
+-    description: "바닐라 향을 얹은 포근한 라떼 레시피.",
+-    stockReady: true,
+-    isNew: true,
+-    imageSrc: drinkImages.affogato,
+-    materials: [
+-      { name: "원두", have: 12, need: 1, icon: "☕" },
+-      { name: "우유", have: 18, need: 1, icon: "🥛" },
+-      { name: "시럽", have: 6, need: 1, icon: "🍯" },
+-    ],
+-  },
+-  {
+-    id: "cafe-mocha",
+-    name: "카페 모카",
+-    category: "sweet",
+-    tag: "달콤",
+-    description: "초콜릿과 커피가 만나는 진한 디저트 음료.",
+-    stockReady: false,
+-    imageSrc: drinkImages.affogato,
+-    materials: [
+-      { name: "원두", have: 12, need: 1, icon: "☕" },
+-      { name: "우유", have: 18, need: 1, icon: "🥛" },
+-      { name: "초콜릿", have: 0, need: 1, icon: "🍫" },
+-    ],
+-  },
+-  {
+-    id: "matcha-latte",
+-    name: "말차 라떼",
+-    category: "tea",
+-    tag: "티&청량",
+-    description: "쌉싸름한 말차와 우유가 차분하게 어우러져요.",
+-    stockReady: true,
+-    imageSrc: drinkImages.latte,
+-    materials: [
+-      { name: "말차", have: 5, need: 1, icon: "🍵" },
+-      { name: "우유", have: 18, need: 1, icon: "🥛" },
+-      { name: "물", have: 24, need: 1, icon: "💧" },
+-    ],
+-  },
+-  {
+-    id: "nutty-cloud",
+-    name: "너티 클라우드",
+-    category: "special",
+-    tag: "스페셜",
+-    description: "고소한 견과 향과 크림이 올라간 특별 메뉴.",
+-    stockReady: false,
+-    imageSrc: drinkImages.affogato,
+-    materials: [
+-      { name: "원두", have: 12, need: 1, icon: "☕" },
+-      { name: "우유", have: 18, need: 1, icon: "🥛" },
+-      { name: "시럽", have: 0, need: 1, icon: "🍯" },
+-    ],
+-  },
+-];
++const recipeVisualMeta: Record<
++  DrinkMenuId,
++  { category: Exclude<RecipeCategory, "all">; tag: string }
++> = {
++  americano: { category: "base", tag: "기본" },
++  latte: { category: "milk", tag: "우유" },
++  affogato: { category: "dessert", tag: "디저트" },
++  morning_mist_latte: { category: "milk", tag: "우유" },
++  dawn_honey_shot: { category: "sweet", tag: "달콤" },
++  noon_citrus_coffee: { category: "special", tag: "스페셜" },
++  traveler_blend: { category: "special", tag: "스페셜" },
++  evening_caramel_crema: { category: "sweet", tag: "달콤" },
++  sunset_tea_latte: { category: "tea", tag: "티&청량" },
++  night_velvet_mocha: { category: "dessert", tag: "디저트" },
++  midnight_tonic: { category: "tea", tag: "티&청량" },
++};
++
++const materialIcons: Partial<Record<MaterialId, string>> = {
++  milk: "🥛",
++  cream: "🍦",
++  vanillaSyrup: "🍯",
++  caramelSyrup: "🍮",
++  hazelnutSyrup: "🌰",
++  mochaSauce: "🍫",
++  honey: "🍯",
++  matchaPowder: "🍵",
++  blackTeaBase: "🫖",
++  fruitBase: "🍊",
++  sparklingWater: "💧",
++  rareIngredient: "✨",
++};
++
++function menuEmoji(id: DrinkMenuId): string {
++  switch (id) {
++    case "latte":
++    case "morning_mist_latte":
++    case "sunset_tea_latte":
++      return "🥛";
++    case "affogato":
++      return "🍨";
++    case "noon_citrus_coffee":
++    case "midnight_tonic":
++      return "🍊";
++    default:
++      return "☕";
++  }
++}
++
++function workbenchBlockReason(input: {
++  id: DrinkMenuId;
++  validation: ReturnType<typeof validateCraftDrink>;
++  shots: number;
++  beans: number;
++}): string | undefined {
++  const recipe = recipeDefinition(input.id);
++  const { validation } = input;
++  if (validation.canCraft) return undefined;
++  if (!validation.recipeUnlocked) {
++    return recipe.shopAvailability === "timeWindow"
++      ? "시간대 상점에서 먼저 레시피를 발견해야 해요."
++      : `레벨 ${recipe.levelRequired}에서 레시피가 열려요.`;
++  }
++  if (!validation.recipePurchased) {
++    return recipe.shopAvailability === "timeWindow"
++      ? "떠돌이 판매상에서 레시피를 먼저 구매해 주세요."
++      : "상점에서 레시피를 먼저 구매해 주세요.";
++  }
++  if (!validation.shotsOk) {
++    return `에스프레소 샷이 부족해요 · ${input.shots}/${recipe.shots}`;
++  }
++  if (!validation.beansOk) {
++    return `원두가 부족해요 · ${input.beans}/${recipe.beans}`;
++  }
++  if (!validation.materialsOk) {
++    return `재료가 부족해요 · ${validation.missingMaterials
++      .map((item) => `${item.name} ${item.have}/${item.need}`)
++      .join(", ")}`;
++  }
++  return "현재는 제작할 수 없어요.";
++}
+ 
+ function stationAsset(path: string) {
+   return publicAssetPath(path);
