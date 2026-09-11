@@ -10,7 +10,7 @@ on:
 permissions:
   contents: write
 
-# Validate M1 after fixing the regular-gift seed to remain on the active sale day.
+# Validate M1 with the same-day deterministic regular-gift seed (patch prechecked locally).
 jobs:
   apply-and-validate:
     runs-on: ubuntu-latest
