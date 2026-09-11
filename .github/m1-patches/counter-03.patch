@@ -1,0 +1,157 @@
+--- a/src/features/lobby/components/CounterScreen.tsx
++++ b/src/features/lobby/components/CounterScreen.tsx
+@@ -533,85 +559,51 @@
+     >
+       <div className="mb-1.5 flex items-center justify-between gap-2">
+         <div className="min-w-0">
+-          <h2 className="text-base font-black text-[#533621]">개시 음료</h2>
++          <h2 className="text-base font-black text-[#533621]">판매 재고</h2>
+           <p className="text-[11px] font-bold text-[#76563b]/70">
+-            판매할 음료를 최대 3개 골라요.
++            재고가 있는 메뉴를 현재 판매 순서대로 자동 판매해요.
+           </p>
+         </div>
+-        <SaleDrinkPickerButton
+-          disabled={isSelling}
+-          selectedCount={selectedCount}
+-          onClick={onOpenPicker}
+-        />
++        <span className="h-9 shrink-0 rounded-full border border-[#c49d6e]/45 bg-[#fffaf0] px-3 text-[11px] font-black leading-9 text-[#6a4a30]">
++          판매 가능 {activeDrinkCount}종
++        </span>
+       </div>
+       <div className="grid grid-cols-3 gap-1.5">
+         {drinks.map((drink) => (
+-          <SaleDrinkCard
+-            key={drink.id}
+-            drink={drink}
+-            disabled={isSelling || !drink.isAvailable}
+-            onToggle={onToggleDrink}
+-          />
++          <SaleDrinkCard key={drink.id} drink={drink} isSelling={isSelling} />
+         ))}
+       </div>
+     </section>
+   );
+ }
+ 
+-function SaleDrinkPickerButton({
+-  disabled,
+-  selectedCount,
+-  onClick,
+-}: {
+-  disabled: boolean;
+-  selectedCount: number;
+-  onClick: () => void;
+-}) {
+-  return (
+-    <button
+-      type="button"
+-      disabled={disabled}
+-      onClick={onClick}
+-      className="sale-drink-picker-button h-9 shrink-0 rounded-full border border-[#c49d6e]/45 bg-[#fffaf0] px-3 text-[11px] font-black text-[#6a4a30] disabled:opacity-55"
+-      data-asset-path={COUNTER_ASSETS.pickerButton}
+-    >
+-      판매 음료 선택 {selectedCount}
+-    </button>
+-  );
+-}
+-
+ function SaleDrinkCard({
+   drink,
+-  disabled,
+-  onToggle,
++  isSelling,
+ }: {
+   drink: SaleDrinkItem;
+-  disabled: boolean;
+-  onToggle: (id: DrinkMenuId) => void;
++  isSelling: boolean;
+ }) {
+   return (
+-    <button
+-      type="button"
+-      disabled={disabled}
+-      onClick={() => onToggle(drink.id)}
++    <article
+       className={cn(
+-        "sale-drink-card relative min-h-[100px] rounded-[18px] border p-1.5 text-center transition-transform active:scale-[0.98] disabled:opacity-55",
+-        drink.isSelected
+-          ? "border-[#4c9ec3] bg-[#f4fbff] ring-2 ring-[#80c2dd]"
+-          : "border-[#d0a978]/48 bg-[#fffaf0]",
++        "sale-drink-card relative min-h-[100px] rounded-[18px] border p-1.5 text-center",
++        drink.isAvailable
++          ? "border-[#4c9ec3] bg-[#f4fbff] ring-1 ring-[#80c2dd]/70"
++          : "border-[#d0a978]/48 bg-[#fffaf0] opacity-55",
+       )}
+       data-asset-path={
+-        drink.isSelected
++        drink.isAvailable
+           ? COUNTER_ASSETS.drinkCardSelected
+           : COUNTER_ASSETS.drinkCard
+       }
+     >
+-      {drink.isSelected ? (
++      {drink.isAvailable ? (
+         <span
+-          className="absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#4c9ec3] text-xs font-black text-white"
++          className="absolute right-1 top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-[#4c9ec3] px-1 text-[9px] font-black text-white"
+           data-asset-path={COUNTER_ASSETS.checkIcon}
+         >
+-          ✓
++          {isSelling ? "판매" : "재고"}
+         </span>
+       ) : null}
+       <div className="mx-auto mt-1 flex h-11 w-11 items-center justify-center rounded-full bg-[#f0d6ad]">
+@@ -623,30 +615,24 @@
+       <p className="mt-0.5 text-[10px] font-black text-[#7a5b3d]/72">
+         {drink.stock}잔 · {drink.sellPrice}C
+       </p>
+-    </button>
++    </article>
+   );
+ }
+ 
+ function StartSaleButton({
+   isSelling,
+   canStart,
+-  completedReady,
+   onClick,
+ }: {
+   isSelling: boolean;
+   canStart: boolean;
+-  completedReady: boolean;
+   onClick: () => void;
+ }) {
+-  const label = isSelling
+-    ? "판매 중"
+-    : completedReady
+-      ? "판매 완료 확인"
+-      : "판매 개시";
++  const label = isSelling ? "판매 중지" : "판매 개시";
+   return (
+     <button
+       type="button"
+-      disabled={!canStart}
++      disabled={!isSelling && !canStart}
+       onClick={onClick}
+       className="start-sale-button mt-1.5 flex h-11 w-full items-center justify-center rounded-full border border-[#4f9ec2]/45 bg-[#75b9d6] text-lg font-black text-white disabled:border-[#c4a77e]/40 disabled:bg-[#dac5a0] disabled:text-[#82684b]"
+       style={{
+@@ -699,7 +685,7 @@
+       <div className="grid grid-cols-[1fr_104px] gap-2">
+         <div>
+           <p className="text-[12px] font-black text-[#4d3a2a]">
+-            선택한 음료 {drinks.length}종 판매 중
++            판매 가능한 음료 {drinks.length}종 {isSelling ? "자동 판매 중" : "대기"}
+           </p>
+           <div className="mt-1.5 flex gap-1.5">
+             {(drinks.length > 0 ? drinks : []).slice(0, 3).map((drink) => (
+@@ -715,7 +701,7 @@
+             ))}
+             {drinks.length === 0 ? (
+               <p className="text-[11px] font-bold text-[#76563b]/70">
+-                판매할 음료를 골라주세요.
++                제작된 재고가 없어요.
+               </p>
+             ) : null}
+           </div>
