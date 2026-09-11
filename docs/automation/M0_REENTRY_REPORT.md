@@ -164,7 +164,7 @@ M1에서 퍼즐은 core-loop smoke test와 보상/저장 회귀 확인만 한다
 
 ### UX 리스크
 
-모바일 Playwright 실제 screenshot에서는 onboarding 안내 카드가 하단 PLAY 영역과 겹쳐 보이는 구간이 있다.
+모바일 Playwright 실제 screenshot에서는 onboarding 안내 카드가 하단 PLAY 영역을 가리는 구간이 있다.
 핵심 기능 blocker는 아니지만 M2 visual/UX pass에서 우선 점검할 가치가 있다.
 
 ---
@@ -423,7 +423,7 @@ M2에서 시각 품질 비교 후 필요하면 신규 생성/적용한다.
 
 M0 시점에는 파일명만 보고 대량 신규 제작을 확정하지 않는다.
 
-M1 source-of-truth 정렬 후 M2 visual audit에서 화면별로 `REUSE / POLISH / REPLACE / NEEDED`를 다시 판정한다.
+M1 source-of-truth 정렬 후 M2 visual audit에서 화면별로 `REUSE / POLISH / REPLACE / LEGACY / NEEDED`를 다시 판정한다.
 
 ---
 
