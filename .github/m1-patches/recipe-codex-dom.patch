@@ -1,0 +1,39 @@
+--- a/tests/visual/recipe-ownership.spec.ts
++++ b/tests/visual/recipe-ownership.spec.ts
+@@ -37,7 +37,10 @@
+   ).toBeEnabled();
+ 
+   await page.goto("/codex");
+-  const latteCodexCard = page.locator("li").filter({ hasText: "카페 라떼" }).first();
++  const latteCodexCard = page
++    .locator(".drinkdex-card")
++    .filter({ hasText: "카페 라떼" })
++    .first();
+   await expect(latteCodexCard).toContainText("제작 대기");
+ 
+   await page.goto("/cafe");
+@@ -100,7 +103,7 @@
+ 
+   await page.goto("/codex");
+   const nightCodexCard = page
+-    .locator("li")
++    .locator(".drinkdex-card")
+     .filter({ hasText: "나이트 벨벳 모카" })
+     .first();
+   await expect(nightCodexCard).toContainText("제작 대기");
+@@ -169,10 +172,13 @@
+ 
+   await page.goto("/codex");
+   await expect(
+-    page.locator("li").filter({ hasText: "카페 라떼" }).first(),
++    page.locator(".drinkdex-card").filter({ hasText: "카페 라떼" }).first(),
+   ).toContainText("제작 대기");
+   await expect(
+-    page.locator("li").filter({ hasText: "나이트 벨벳 모카" }).first(),
++    page
++      .locator(".drinkdex-card")
++      .filter({ hasText: "나이트 벨벳 모카" })
++      .first(),
+   ).toContainText("제작 대기");
+ 
+   await page.goto("/cafe");
