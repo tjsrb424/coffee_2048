@@ -1,0 +1,78 @@
+--- a/src/features/lobby/components/RoastingScreen.tsx
++++ b/src/features/lobby/components/RoastingScreen.tsx
+@@ -328,7 +328,7 @@
+       />
+       <div className="absolute inset-0 px-2.5 pb-3 pt-8 text-center">
+         <p className="text-[10px] font-black text-white drop-shadow-sm">
+-          선택 원두
++          향미 프리셋
+         </p>
+         <div className="mx-auto mt-3 flex h-[58px] w-[58px] items-center justify-center">
+           <BeanVisual bean={bean} size={58} />
+@@ -386,7 +386,7 @@
+         className="absolute left-[29%] top-[14.5%] z-10 h-7 w-7 rounded-full bg-[#fff7e8] ring-1 ring-[#ead5b7]/70"
+       />
+       <div className="absolute left-[32%] top-[1.5%] rounded-full bg-[#6faed0] px-4 py-1 text-[13px] font-black text-white">
+-        원두 선택
++        향미 프리셋
+       </div>
+       <p className="absolute right-[8%] top-[69%] text-[10px] font-black text-[#76563b]/70">
+         보유 원두 {stock}
+@@ -403,8 +403,11 @@
+         />
+       ))}
+ 
++      <p className="absolute left-[32%] top-[47.5%] max-w-[58%] text-[8px] font-bold leading-tight text-[#76563b]/72">
++        향미/시간 프리셋은 연출용이며 1.0의 원두 비용과 샷 산출은 동일해요.
++      </p>
+       <div className="absolute left-[32%] top-[58.5%] rounded-full bg-[#6faed0] px-4 py-1 text-[12px] font-black text-white">
+-        로스팅 단계
++        로스팅 시간
+       </div>
+       <div className="absolute inset-x-[7%] bottom-[8%] grid h-[17%] grid-cols-3 gap-2">
+         {ROAST_LEVELS.map((level) => {
+@@ -509,7 +512,7 @@
+     status === "roasting"
+       ? "로스팅 중"
+       : status === "complete"
+-        ? "완료 받기"
++        ? "샷 받기"
+         : "로스팅 시작";
+   return (
+     <button
+@@ -609,7 +612,7 @@
+         disabled
+         className="relative h-10 flex-1 overflow-hidden rounded-[18px] text-sm font-black text-[#7b5b3e]/70 disabled:opacity-80"
+         data-asset-path={ROASTING_ASSETS.storageButton}
+-        title="보관함 route 연결 예정"
++        aria-label="보관함 준비 중"
+       >
+         <Image
+           src={ROASTING_ASSETS.storageButton}
+@@ -619,7 +622,7 @@
+           className="object-contain"
+         />
+         <span className="relative z-10 flex h-full items-center justify-center pl-6">
+-          보관함
++          보관함 · 준비 중
+         </span>
+       </button>
+       <button
+@@ -627,7 +630,7 @@
+         disabled
+         className="relative h-10 flex-1 overflow-hidden rounded-[18px] text-sm font-black text-[#7b5b3e]/70 disabled:opacity-80"
+         data-asset-path={ROASTING_ASSETS.completedBeansButton}
+-        title="완료 원두 목록 연결 예정"
++        aria-label="로스팅 기록 준비 중"
+       >
+         <Image
+           src={ROASTING_ASSETS.completedBeansButton}
+@@ -637,7 +640,7 @@
+           className="object-contain"
+         />
+         <span className="relative z-10 flex h-full items-center justify-center pl-6">
+-          완료 원두
++          기록 · 준비 중
+         </span>
+       </button>
+     </nav>
