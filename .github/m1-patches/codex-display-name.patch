@@ -1,0 +1,10 @@
+--- a/src/features/codex/components/BeverageCodexScreen.tsx
++++ b/src/features/codex/components/BeverageCodexScreen.tsx
+@@ -818,6 +818,7 @@
+ 
+ function safeDrinkName(beverage: BeverageDefinition): string {
+   if (DRINK_NAME_OVERRIDES[beverage.id]) return DRINK_NAME_OVERRIDES[beverage.id];
++  if (beverage.name.trim()) return beverage.name;
+   return beverage.id
+     .split("_")
+     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
