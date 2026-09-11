@@ -1,0 +1,52 @@
+--- a/src/features/lobby/components/CounterScreen.tsx
++++ b/src/features/lobby/components/CounterScreen.tsx
+@@ -744,6 +730,49 @@
+   );
+ }
+ 
++function CounterFeedback({
++  now,
++  salePing,
++  regularGiftPing,
++}: {
++  now: number;
++  salePing: CustomerCounterSalePing | null;
++  regularGiftPing: RegularGiftPing | null;
++}) {
++  const saleFresh =
++    salePing != null && now >= salePing.atMs && now - salePing.atMs < 12_000;
++  const giftFresh =
++    regularGiftPing != null &&
++    now >= regularGiftPing.atMs &&
++    now - regularGiftPing.atMs < 12_000;
++
++  if (!saleFresh && !giftFresh) return null;
++
++  return (
++    <div className="mt-1.5 space-y-1">
++      {saleFresh && salePing && salePing.gainedAffection > 0 ? (
++        <p className="rounded-full bg-[#dcefdc]/92 px-3 py-1 text-center text-[10px] font-black text-[#4f7654]">
++          오늘의 손님 · 애정 +{salePing.gainedAffection}
++        </p>
++      ) : null}
++      {giftFresh && regularGiftPing ? (
++        <p className="rounded-full bg-[#fff3d5]/94 px-3 py-1 text-center text-[10px] font-bold text-[#76563b]">
++          {regularGiftPing.tipCoins > 0
++            ? t("hints.counter.regularGiftWithTip", {
++                name: regularGiftPing.giverName,
++                note: regularGiftPing.note,
++                coins: regularGiftPing.tipCoins,
++              })
++            : t("hints.counter.regularGift", {
++                name: regularGiftPing.giverName,
++                note: regularGiftPing.note,
++              })}
++        </p>
++      ) : null}
++    </div>
++  );
++}
++
+ function SaleProgressBar({ progressPercent }: { progressPercent: number }) {
+   return (
+     <div
