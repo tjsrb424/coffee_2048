@@ -1,0 +1,115 @@
+name: M1 Apply and Validate
+
+on:
+  push:
+    branches:
+      - automation/m1-source-of-truth
+    paths:
+      - .github/workflows/m1-apply.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply reviewed M1 patches
+        shell: bash
+        run: |
+          set -euo pipefail
+          for patch in \
+            .github/m1-patches/workbench-01.patch \
+            .github/m1-patches/workbench-02.patch \
+            .github/m1-patches/workbench-03.patch \
+            .github/m1-patches/workbench-04.patch \
+            .github/m1-patches/workbench-05.patch \
+            .github/m1-patches/counter-01.patch \
+            .github/m1-patches/counter-02.patch \
+            .github/m1-patches/counter-03.patch \
+            .github/m1-patches/counter-04.patch \
+            .github/m1-patches/roaster.patch \
+            .github/m1-patches/recipe-ownership.patch \
+            .github/m1-patches/station-source-of-truth.patch
+          do
+            echo "Applying $patch"
+            git apply --whitespace=nowarn "$patch"
+          done
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Generate Linux visual baselines
+        shell: bash
+        run: |
+          npx playwright test \
+            tests/visual/lobby.spec.ts \
+            tests/visual/puzzle.spec.ts \
+            --update-snapshots
+
+      - name: Validate M1
+        id: validate
+        shell: bash
+        run: |
+          set +e
+          rc=0
+
+          npm run lint || rc=1
+          npm run typecheck || rc=1
+          NEXT_STATIC_EXPORT=true npm run build || rc=1
+
+          npx playwright test \
+            tests/visual/station-source-of-truth.spec.ts \
+            tests/visual/recipe-ownership.spec.ts \
+            tests/visual/customer-sale-flow.spec.ts \
+            tests/visual/meta-persistence.spec.ts || rc=1
+
+          npm audit --json > /tmp/m1-npm-audit.json 2>&1 || true
+
+          echo "validation_rc=$rc" >> "$GITHUB_OUTPUT"
+          if [ "$rc" -ne 0 ]; then
+            echo "::warning::M1 validation failed. No product commit will be pushed."
+          fi
+          exit 0
+
+      - name: Upload validation evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: m1-validation-evidence
+          retention-days: 3
+          if-no-files-found: ignore
+          path: |
+            playwright-report
+            test-results
+            /tmp/m1-npm-audit.json
+
+      - name: Commit validated M1 result
+        if: steps.validate.outputs.validation_rc == '0'
+        shell: bash
+        run: |
+          set -euo pipefail
+          rm -rf .github/m1-patches
+          rm -f .github/workflows/m1-source-snapshot.yml
+          rm -f .github/workflows/m1-apply.yml
+
+          git config user.name "Q Dev Automation"
+          git config user.email "62631515+tjsrb424@users.noreply.github.com"
+          git add -A
+          git status --short
+          git commit -m "feat: align cafe stations with M1 source of truth"
+          git push origin HEAD:automation/m1-source-of-truth
