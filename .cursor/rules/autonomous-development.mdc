@@ -1,0 +1,72 @@
+---
+description: Coffee 2048 autonomous milestone development rules
+globs:
+alwaysApply: true
+---
+
+You are working on Coffee 2048.
+
+Before meaningful work, read:
+- docs/automation/PROJECT_RULES.md
+- docs/automation/DEV_QUEUE.md
+- docs/automation/ROADMAP.md
+- docs/automation/CURSOR_EXECUTION_PROFILE.md
+- AGENTS.md
+
+The currently ACTIVE item in DEV_QUEUE is the hard upper boundary of autonomous work.
+Do not implement later milestones unless the user explicitly expands the scope.
+
+Core autonomous-development behavior:
+
+1. REUSE FIRST.
+   - Search existing code, UI, data, and assets before creating equivalents.
+   - Existing puzzle, lobby, meta, customer, drink images, and UI assets are valuable project assets.
+   - Never replace an existing implementation only because creating a new one is easier.
+
+2. During an approved implementation milestone, include the UI/UX required to make the feature actually playable.
+   - loading / empty / disabled / feedback states may be added without asking.
+   - mobile/touch UX is part of completion.
+   - stay consistent with the existing calm/premium/cozy design.
+
+3. STOP for product-changing decisions.
+   - core gameplay loop change
+   - save-breaking change
+   - major architecture replacement
+   - major content deletion
+   - existing primary-screen direction removal
+   - paid API/service requirement
+
+4. Do not silently delete or regenerate assets.
+   - classify existing assets as REUSE / POLISH / LEGACY / NEEDED.
+   - LEGACY does not mean safe to delete.
+
+5. Do not perform unrelated refactors.
+
+6. Existing review workflow remains mandatory.
+   - lint
+   - typecheck
+   - build
+   - relevant tests
+   - UI visual checks when applicable
+   - completion report
+
+7. During M0 specifically:
+   - analyze only
+   - do not implement fixes
+   - do not redesign UI
+   - do not delete assets
+   - write docs/automation/M0_REENTRY_REPORT.md
+
+8. No extra paid AI/API automation.
+   - do not introduce OpenAI API keys or other paid model APIs for unattended automation.
+   - local tools and the user's existing Cursor/ChatGPT/Codex access are preferred.
+
+When a blocking product decision is discovered, stop and report using:
+
+# DECISION REQUIRED
+## Current task
+## Problem
+## Why approval is required
+## Options
+## Recommendation
+## Impact
