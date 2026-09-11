@@ -1,223 +1,241 @@
-# Coffee 2048 — Autonomous Development Roadmap
+# Coffee 2048 — GPT Autonomous Development Roadmap
 
 ## 문서 상태
 
-- 상태: `PROVISIONAL`
-- 현재 활성 단계: `M0 — 프로젝트 재인수`
-- M1 이후: M0 결과 확인 후 잠금
+- 상태: `LOCKED AFTER M0`
+- M0: `DONE`
+- 다음 권장 단계: `M1 — 1.0 기준선 복구 및 Source-of-Truth 정렬`
+- 실행 주체: ChatGPT/GPT
 
-이 로드맵은 기존 `docs/08_dev_roadmap.md`를 폐기하지 않는다.
-기존 로드맵의 큰 원칙인 **손맛 → 연결 → 운영 → 성장 → 생활감 → 확장**을 유지하면서, 현재 이미 구현된 상태에서 다시 시작하기 위한 실행용 마일스톤이다.
+이 문서는 과거 `docs/08_dev_roadmap.md`를 삭제하지 않는다.
+다만 실제 현재 코드가 과거 roadmap보다 훨씬 진행되어 있으므로, 이후 자동개발 실행 순서는 이 문서를 우선한다.
 
 ---
 
-## 현재 베이스라인
+# 현재 베이스라인
 
-현재 프로젝트는 새 프로젝트가 아니다.
+이미 구현된 축:
 
-이미 존재하는 핵심:
+- 2048 puzzle core / reward claim
+- 고품질 lobby 1차 비주얼
+- roasting / workbench / counter 최신 화면
+- 실제 cafe economy / material / recipe / auto-selling
+- account level / mission / unlock
+- standard recipe / time-shop recipe
+- cafe upgrade
+- beverage codex
+- save/load/offline reward
+- guest meta v1
+- rewarded claim 2종
+- desktop/mobile Playwright
 
-- 4x4 2048 퍼즐
-- 이동/합체/점수/게임오버
-- 퍼즐 손맛 연출
-- 퍼즐 결과 보상 연결
-- 카드형 로비
-- 자원 HUD
-- 로스터
-- 메뉴 제작/쇼케이스
-- 판매 개시/판매 세션
-- 재고 소모/코인 획득
-- 손님 데이터 구조
-- 애정도/가게 애정도
-- 오늘의 손님
-- 선호 메뉴 보너스
-- 단골/스토리 조각 최소 버전
-
-따라서 기존 기능을 다시 만드는 마일스톤은 두지 않는다.
+현재 가장 큰 과제는 새 기능 부족이 아니라 **최신 비주얼 UI와 실제 domain source of truth의 정렬 및 regression baseline 회복**이다.
 
 ---
 
 # M0 — 프로젝트 재인수
 
-## 목표
+- 상태: `DONE`
+- 결과: `docs/automation/M0_REENTRY_REPORT.md`
 
-5월까지 개발된 실제 코드와 자산을 현재 기준으로 다시 이해하고, 문서와 코드의 차이를 정리한다.
+핵심 결론:
 
-## 작업
-
-- 실제 route/screen inventory
-- puzzle 구현 확인
-- lobby/roaster/showcase/counter 구현 확인
-- meta/store/save 구조 확인
-- customer 관계 구조 확인
-- 이미지/아이콘/폰트/배경 asset inventory
-- 사용 중/미사용/중복/legacy asset 분류
-- build/lint/typecheck/visual test 상태 확인
-- 문서와 실제 코드 충돌점 확인
-- 현재 UX 문제점 목록
-- 다음 마일스톤 재산정
-
-## 금지
-
-- 기능 개발
-- UI 리디자인
-- 자산 삭제
-- 구조 리팩터링
-
-## 완료 기준
-
-`M0_REENTRY_REPORT.md`가 작성되고 사용자에게 현재 상태가 보고된다.
+- 프로젝트를 다시 만들지 않는다.
+- 성장/save/customer v1은 이미 상당 부분 구현되어 있으므로 재구현하지 않는다.
+- 최신 UI 일부가 실제 domain model과 의미가 어긋나므로 이를 먼저 정렬한다.
 
 ---
 
-# M1 — 현재 플레이 루프 안정화
+# M1 — 1.0 기준선 복구 및 Source-of-Truth 정렬
 
-> M0 결과 후 확정
+## 상태
 
-## 후보 목표
+`READY`
 
-새 기능보다 현재 실제 플레이 루프의 단절/불편을 먼저 제거한다.
-
-후보:
-
-- 퍼즐 → 보상 → 로비 전환 확인
-- 로스터/제작/판매의 상태 전달 개선
-- 모바일 주요 UX blocker 제거
-- 판매 세션의 이해도/체감 개선
-- 명백한 회귀/깨진 UI 수정
-
-## 완료 기준
-
-퍼즐부터 판매 결과까지 한 세션을 막힘 없이 플레이할 수 있다.
-
----
-
-# M2 — 핵심 손님 개인화
+사용자가 M1 구현을 승인하면 GPT가 별도 작업 branch에서 진행한다.
 
 ## 목표
 
-핵심 손님이 일반 손님과 실제로 다르게 느껴지게 한다.
+**현재 이미 구현된 1.0 기능을 최신 UI에서 실제 규칙 그대로 작동시키고 CI를 녹색으로 만든다.**
 
-후보:
+## A. Workbench 정렬
 
-- 핵심 손님별 문구
-- 선호 메뉴 반응
-- 작은 흔적/보상 차별화
-- 방문 시 피드백
-- 애정도 변화의 읽기 쉬운 UX
+- 화면 내부 hardcoded recipe/material preview 제거 또는 adapter화
+- 실제 `visibleMenuOrder` 사용
+- 실제 recipe ownership 사용
+- 실제 material inventory 사용
+- 실제 `validateCraftDrink` 사용
+- 실제 `craftDrink` 결과와 CTA 상태 일치
 
-## 완료 기준
+## B. Counter 정렬
 
-핵심 손님 5명을 이름만 다른 데이터가 아니라 플레이 중 구분할 수 있다.
+- 화면의 판매 상태를 실제 auto-selling store와 정렬
+- `selectedDrinkIds`처럼 실제 mechanics에 반영되지 않는 local 선택은 기능처럼 보이지 않도록 수정
+- 신규 sale-filter/save mechanic은 M1에서 추가하지 않음
+- featured customer / queue / progress / stock을 실제 상태 기준으로 표시
+
+## C. Roaster 정렬
+
+- 현재 1.0 `roastOnce()` mechanics 유지
+- 원두/배전 선택이 실제 별도 경제 효과가 있는 것처럼 오해되지 않게 정리
+- special beans / roast-depth mechanics는 post-1.0
+
+## D. Regression test 복구
+
+- customer sale-flow 최신 Counter UI 계약으로 갱신
+- customer persistence 최신 copy/layout에 맞추되 persisted state assertion은 유지
+- recipe ownership은 실제 shop/cafe ownership source를 검증
+- `/codex`는 collection/craft-stage semantics로 검증
+- Linux lobby/puzzle visual baseline 정리
+
+## E. Core smoke
+
+Desktop + Mobile에서 아래를 자동 검증:
+
+`puzzle → reward → lobby → roast → craft → sale → coin/customer update → reload`
+
+## F. Dependency / CI hygiene
+
+- npm audit 8건 원인 확인
+- safe non-breaking update만 자동 적용 가능
+- breaking upgrade는 Decision Gate
+- GitHub Actions runtime warning 점검
+
+## 완료 조건
+
+- lint PASS
+- typecheck PASS
+- build PASS
+- 핵심 Playwright desktop/mobile PASS
+- visual baseline 정상
+- 최신 UI와 domain source의 의미 일치
+- save/migration 회귀 없음
 
 ---
 
-# M3 — 스토리 조각 2단계
+# M2 — Core UI/UX + Asset Quality Pass
+
+## 상태
+
+`WAITING: M1`
 
 ## 목표
 
-핵심 손님의 관계 축을 한 단계 더 깊게 만든다.
+1.0 mechanics를 바꾸지 않고 화면 품질과 일관성을 올린다.
 
-후보:
+## 범위
 
-- 두 번째 감정 포인트
-- 해금 조건
-- 스토리 조각 표시 UX
-- 과도한 대형 도감 UI 없이 작은 관계 진행 표현
+- lobby / roaster / workbench / counter / cafe shop / codex 시각 언어 통일
+- 모바일 lobby onboarding / PLAY overlap 개선
+- `(임시 화면)` 상태인 `/lobby/shop` 비주얼 교체
+- spacing / hierarchy / touch target / state feedback 정리
+- 기존 음료/UI/배경 asset 전수 품질 판정
 
-## 완료 기준
+## 이미지 정책
 
-한 명 이상의 핵심 손님에게 1단계 → 2단계 관계 경험이 자연스럽게 이어진다.
+- 기존 asset을 먼저 비교
+- 품질 이득이 명확하면 GPT 이미지 생성/신규 적용 허용
+- 원본은 즉시 삭제하지 않음
+- `REUSE / POLISH / REPLACE / LEGACY / NEEDED` 판정 유지
+
+## 완료 조건
+
+- 코어 화면 간 상업적 완성도 격차가 크게 줄어듦
+- 모바일/데스크톱 visual regression PASS
+- mechanics 변경 없음
 
 ---
 
-# M4 — 특별 원두 시간대
+# M3 — 1.0 Release Candidate
+
+## 상태
+
+`WAITING: M2`
 
 ## 목표
 
-반복 플레이에 작은 변화와 기다릴 이유를 만든다.
+현재 `docs/release_scope_1_0.md`의 범위를 실제 출시 후보 상태로 닫는다.
 
-후보:
+## 범위
 
-- 시간/조건 기반 특별 원두 등장
-- 일반 원두와 명확한 차이
-- 코인/애정도 보너스
-- 손님/스토리와의 연결 가능성
-- 로비에서 읽을 수 있는 상태 UI
+- full regression
+- save/load/reload/migration QA
+- offline reward QA
+- rewarded-ad unsupported/fallback QA
+- 1.0 제외 surface 노출 점검
+- performance / mobile / accessibility
+- static deployment 검수
+- release checklist
 
-## 완료 기준
+## 완료 조건
 
-특별 원두가 단순 재화 추가가 아니라 특정 세션의 목표를 바꾼다.
-
----
-
-# M5 — 성장 구조 / 저장 통합
-
-## 목표
-
-플레이 누적 가치와 복귀 이유를 만든다.
-
-후보:
-
-- 업그레이드
-- 매장 레벨
-- 메뉴 해금
-- save schema 정리
-- migration
-- 저장/불러오기 전체 통합
-- 오프라인 보상 최소 버전
-
-## 주의
-
-세이브 구조 변경은 `STOP` 등급 결정이다. 기존 세이브 호환성을 깨야 한다면 사용자 승인 후 진행한다.
+1.0 범위에서 blocker가 없고 사용자가 직접 전체 core loop를 플레이 검수할 수 있다.
 
 ---
 
-# M6 — 생활감 / UI Polish
+# M4 — 핵심 손님 관계 심화 (Post-1.0 후보)
 
-## 목표
-
-기능 추가보다 카페가 살아 있는 느낌을 강화한다.
+M3 완료 후 사용자 승인 시 진행.
 
 후보:
 
-- 로비 배경 생동감
-- 수치 변화 피드백
-- 카드/바텀시트 polish
-- 전환 품질
-- 모션 통일
-- 고객 체감 강화
+- 핵심 손님별 더 강한 개성
+- 관계 반응
+- 스토리 단계 확장
+- 작은 흔적/보상 고도화
+
+현재 guest meta v1은 1.0 범위로 이미 구현되어 있으므로 M1~M3보다 먼저 확장하지 않는다.
 
 ---
 
-# M7 — 확장 콘텐츠
-
-M0~M6 품질이 충분한 뒤 진행한다.
+# M5 — Special Beans / Orders (Post-1.0 후보)
 
 후보:
 
+- 특별 원두
+- 배전별 실제 gameplay 차이
 - 주문 시스템
+- 시간/조건 콘텐츠
+
+현재 1.0 release scope 밖이다.
+
+---
+
+# M6 — Expansion
+
+후보:
+
 - 꾸미기
 - 이벤트
 - 시즌
 - 특수 타일 확장
-- BM 연결
-- 로컬라이징 확장
+- liveOps
+- broader BM
+- localization expansion
 
 ---
 
-## 마일스톤 실행 규칙
+# 실행 규칙
 
-사용자가 다음처럼 범위를 지정할 수 있다.
+사용자가 아래처럼 승인한다.
 
-- `M1만 구현`
-- `M1~M2까지 진행`
-- `M3까지 플레이 가능한 상태로 만들어`
+```text
+M1 진행해.
+```
 
-AI는 승인된 마지막 마일스톤을 넘어가지 않는다.
+또는
 
-예:
+```text
+M1~M2까지 진행해.
+```
 
-`M1~M3까지`가 승인된 경우 M4의 특별 원두 시스템을 선행 구현하지 않는다.
+GPT는 승인 범위 내부에서는 필요한 코드/UI/UX/test/asset 작업을 스스로 세분화해 진행한다.
 
-단, M1~M3 구현을 위해 필요한 작은 공통 컴포넌트/타입/테스트는 범위 안으로 본다.
+다만 아래는 중단 후 결정 요청:
+
+- core loop 변경
+- save breaking change
+- offline economy semantics 변경
+- 대규모 architecture replacement
+- 주요 콘텐츠 삭제
+- 유료 외부 API/service 필요
