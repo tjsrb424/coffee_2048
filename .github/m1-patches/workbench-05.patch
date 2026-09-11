@@ -1,0 +1,64 @@
+--- a/src/features/lobby/components/WorkbenchRecipeScreen.tsx
++++ b/src/features/lobby/components/WorkbenchRecipeScreen.tsx
+@@ -1011,23 +1086,22 @@
+           <CategoryBadge label={recipe.tag} tone={recipe.category} />
+         </LocalLayoutSlot>
+         <LocalLayoutSlot item={layout.bottomDescription} base={BOTTOM_PANEL_LAYOUT_BASE}>
++          <div>
+             <p className="mt-1.5 line-clamp-2 text-[12px] font-semibold leading-relaxed text-[#6f5137]">
+               {recipe.description}
+             </p>
++            {!recipe.stockReady && recipe.blockReason ? (
++              <p className="mt-1 line-clamp-1 text-[10px] font-bold text-[#b45d4c]">
++                {recipe.blockReason}
++              </p>
++            ) : null}
++          </div>
+         </LocalLayoutSlot>
+ 
+         <LocalLayoutSlot item={layout.bottomStepper} base={BOTTOM_PANEL_LAYOUT_BASE}>
+-            <div className="flex h-full w-full items-center justify-center rounded-full border border-[#d8bd97] bg-[#f5ead8] px-1 text-[#7b5f49] shadow-[inset_0_1px_0_rgb(255_255_255_/_0.7)]">
+-              <StepButton label="수량 감소" onClick={onDec}>
+-                −
+-              </StepButton>
+-              <span className="min-w-[32px] text-center text-lg font-black tabular-nums">
+-                {craftCount}
+-              </span>
+-              <StepButton label="수량 증가" onClick={onInc}>
+-                +
+-              </StepButton>
+-            </div>
++          <div className="flex h-full w-full items-center justify-center rounded-full border border-[#d8bd97] bg-[#f5ead8] px-3 text-[12px] font-black text-[#7b5f49] shadow-[inset_0_1px_0_rgb(255_255_255_/_0.7)]">
++            1회 제작 · 1잔
++          </div>
+         </LocalLayoutSlot>
+         <LocalLayoutSlot item={layout.bottomCraftButton} base={BOTTOM_PANEL_LAYOUT_BASE}>
+             <button
+@@ -1059,27 +1133,6 @@
+   );
+ }
+ 
+-function StepButton({
+-  label,
+-  onClick,
+-  children,
+-}: {
+-  label: string;
+-  onClick: () => void;
+-  children: React.ReactNode;
+-}) {
+-  return (
+-    <button
+-      type="button"
+-      aria-label={label}
+-      className="grid h-8 w-8 place-items-center rounded-full bg-[#ead7bd] text-xl font-black leading-none text-[#75563c] ring-1 ring-[#cfb28c]"
+-      onClick={onClick}
+-    >
+-      {children}
+-    </button>
+-  );
+-}
+-
+ function WorkbenchLayoutSlot({
+   item,
+   anchor = "top",
