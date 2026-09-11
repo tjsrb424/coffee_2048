@@ -1,163 +1,218 @@
 # Coffee 2048 — GPT Autonomous Development Rules
 
 ## 목적
-이 문서는 Coffee 2048을 **ChatGPT/GPT가 직접 GitHub 저장소를 읽고 수정하는 방식**으로 이어 개발하기 위한 운영 규칙이다.
 
-핵심 원칙은 **기존 구현과 자산을 우선 재사용하되, 품질 향상이 명확하면 새 이미지/UI 자산을 제작·교체할 수 있고, 사용자가 승인한 마일스톤 범위 안에서는 GPT가 필요한 시스템/UI/UX를 스스로 판단해 완료 상태까지 구현하는 것**이다.
+Coffee 2048을 기존 구현 위에서 안전하게 이어 개발하기 위한 GPT 전용 운영 규칙이다.
+
+핵심 원칙:
+
+> **기존 구현/자산을 먼저 이해하고 재사용하되, 승인된 마일스톤 안에서는 GPT가 코드·UI·UX·테스트·자산을 스스로 세분화해 완료 상태까지 진행한다. 품질 향상이 명확하면 이미지 신규 제작/교체도 허용한다.**
 
 ---
 
 ## 1. 제품 정체성
+
+Coffee 2048은:
+
 - 손맛 있는 2048 퍼즐
 - 차분한 카페 운영
 - 손님 관계/애정도 메타
 - 감성적이고 저자극인 UI/UX
 
-핵심 루프:
-`퍼즐 → 원두/보상 → 로스팅 → 메뉴 제작/진열 → 판매 → 코인/애정도 → 손님/성장`
+를 결합한 web-first 게임이다.
+
+핵심 흐름:
+
+`퍼즐 → 원두/보상 → 로스팅 → 메뉴 제작/진열 → 판매 → 코인/애정도 → 성장`
 
 ---
 
-## 2. GPT-ONLY
+## 2. 실행 주체
 
-이번 자동개발의 실행 주체는 Cursor가 아니라 GPT다.
+이 자동개발 체계의 실행 주체는 ChatGPT/GPT다.
 
-GPT가 직접:
-- GitHub 저장소 분석
-- 기획/마일스톤 해석
-- 브랜치 생성
-- 코드/UI/UX 수정
-- 문서 수정
-- 커밋/PR 작성
-- 결과 보고
+GPT가 connected GitHub를 직접 사용해:
 
-을 수행한다.
+- 저장소 분석
+- branch 생성
+- 코드 수정
+- UI/UX 수정
+- 필요 시 이미지 생성/적용
+- test 수정/추가
+- GitHub Actions 확인
+- commit / PR
+- 완료보고
 
-GitHub Actions는 빌드/테스트 같은 비-AI CI 용도로만 사용할 수 있다.
-외부 유료 AI API나 별도 OpenAI API 키를 자동화에 사용하지 않는다.
+를 수행한다.
+
+Cursor나 별도 외부 code agent 전달은 필수가 아니다.
 
 ---
 
 ## 3. REUSE FIRST, QUALITY WINS
 
-새 기능/UI/이미지를 만들기 전에 반드시 기존 구현과 자산을 검색한다.
+새 기능/UI/이미지/data structure를 만들기 전에 반드시 기존 구현을 검색한다.
 
 우선 확인:
+
 - `src/features/puzzle2048/**`
 - `src/features/lobby/**`
 - `src/features/meta/**`
+- `src/features/customers/**`
 - `src/stores/**`
+- `src/data/**`
 - `data/**`
 - `image/**`
 - `public/**`
 - `locale/**`
+- `docs/**`
 
-자산 판정:
-1. `REUSE` — 그대로 사용
-2. `POLISH` — 보정 후 사용
-3. `REPLACE` — 기존 자산보다 새 제작물이 의미 있게 더 좋은 경우 교체 후보
-4. `LEGACY` — 현재 미사용, 삭제 금지
-5. `NEEDED` — 신규 제작 필요
+### 금지
 
-### 이미지 신규 제작 허용 조건
-다음 중 하나라도 해당하면 신규 이미지 제작/교체 가능:
-- 기존 자산 해상도/품질이 현재 화면 기준에 현저히 부족
-- 현재 UI/아트 톤과 불일치
-- 중요한 화면에서 반복적으로 노출되어 품질 체감 영향이 큼
-- 애니메이션/상태 표현에 필요한 변형 자산이 없음
-- 신규 제작 시 명확한 가독성/감성/상업적 완성도 향상이 예상됨
+- 기존 puzzle engine을 확인하지 않고 새로 만드는 것
+- 기존 lobby를 확인하지 않고 새로 만드는 것
+- 기존 domain store를 무시하고 UI 전용 가짜 state를 늘리는 것
+- 기존 음료 이미지를 보지도 않고 같은 메뉴를 다시 생성하는 것
+- 오래돼 보인다는 이유만으로 asset을 삭제하는 것
 
-단, 교체 전 기존 자산 위치와 사용처를 확인하고 삭제하지 않는다.
+### 이미지/asset 판정
+
+- `REUSE` — 그대로 사용
+- `POLISH` — 보정 후 사용
+- `REPLACE` — 기존 것을 보존하면서 신규 품질 버전으로 교체
+- `LEGACY` — 현재 runtime 미사용, 삭제는 별도 판단
+- `NEEDED` — 기존에 목적에 맞는 asset이 없음
+
+### 신규 이미지 허용 조건
+
+아래에서 의미 있는 품질 향상이 있을 때 GPT가 신규 이미지를 생성/적용할 수 있다.
+
+- 해상도/선명도
+- 화면 간 스타일 일관성
+- 제품 정체성
+- 모바일 가독성
+- 상업적 완성도
+- 기존 CSS placeholder를 실제 illustration으로 교체할 가치가 큼
+
+기존 원본은 검증 전 즉시 삭제하지 않는다.
 
 ---
 
-## 4. 자율 개발 범위
+## 4. SOURCE OF TRUTH 우선
 
-사용자가 `M1~M3까지 구현`처럼 범위를 지정하면 그 안에서 다음은 별도 질문 없이 진행 가능하다.
+UI가 예뻐도 실제 게임 규칙과 다르면 완료가 아니다.
+
+다음 순서로 구현한다.
+
+1. 현재 domain/store/economy source 확인
+2. UI가 보여주는 의미 확인
+3. 둘이 다르면 기존 1.0 mechanics를 기본값으로 유지
+4. UI를 실제 mechanics에 맞춤
+5. mechanics 자체를 확장해야 하면 Decision Gate 판단
+
+특히:
+
+- craftability
+- material counts
+- sale state
+- customer state
+- recipe ownership
+- save/offline state
+
+는 화면 내부 상수보다 store/domain을 우선한다.
+
+---
+
+## 5. 자율 개발 범위
+
+사용자가 `M1 진행`, `M1~M2 진행`처럼 승인하면 해당 범위 안에서는 사소한 질문 없이 진행한다.
 
 ### AUTO
-- 필요한 컴포넌트/UI 상태 추가
+
+- 필요한 component 추가
+- state display 연결
 - loading / empty / disabled / error state
-- 모바일 터치 UX
-- transition / micro interaction
-- 기존 디자인 시스템을 따르는 카드/바텀시트/모달
-- store/action/type 연결
-- 테스트 추가
-- 작은 리팩터링
-- 접근성/레이아웃 보정
-- 승인 기능을 완성하기 위한 이미지/UI 자산 제작
+- mobile/touch UX
+- micro interaction
+- small safe refactor
+- type 정리
+- test 추가/갱신
+- accessibility/layout 보정
+- asset reuse/polish
+- 명확한 품질 개선을 위한 신규 image 적용
+- lint/type/build/test 오류 수정
 
-### REVIEW
-- 새 메타 시스템
-- 손님 관계 UX
-- 판매 세션 체감 변경
-- 성장/업그레이드
-- 특별 원두
-- 저장 연동
-- 주요 화면 정보 구조 변경
+### REVIEW AFTER IMPLEMENTATION
 
-### STOP
-다음은 자동 진행 금지. `DECISION REQUIRED`로 보고:
-- 핵심 게임 루프 변경
-- 퍼즐 규칙 의미 변경
-- 세이브 호환성 파괴
-- 대규모 상태/아키텍처 교체
-- 기존 콘텐츠/이미지 대량 삭제
-- BM 실결제 구현
-- 확정 UI 방향 폐기
-- 기술 스택 교체
-- 승인된 마일스톤을 넘어서는 개발
+- 주요 화면 UX 구조 변경
+- sale experience 변경
+- growth presentation
+- customer presentation
+- core asset replacement
 
----
+이 범주는 승인 마일스톤 안에서 구현할 수 있으나 완료 후 사용자 플레이 검수를 명확히 요청한다.
 
-## 5. UI/UX 규칙
+### STOP / DECISION REQUIRED
 
-기능 코드만 작성하고 끝내지 않는다. 승인 기능을 실제 플레이 가능한 상태로 만들기 위한 UI/UX를 포함한다.
-
-유지:
-- 카드형 로비
-- 상단 자원 HUD
-- 바텀시트 기반 세부 운영
-- 카드형 제작 UI
-- 모바일 우선
-- calm / premium / cozy
-
-피함:
-- 관리툴 같은 정보 과밀
-- 과도한 팝업/모션
-- 개발자 용어 노출
-- 기존 화면을 이유 없이 전면 폐기
+- core gameplay loop 변경
+- save compatibility 파괴
+- offline economy semantics 변경
+- 대규모 state/architecture 교체
+- 주요 콘텐츠 대량 삭제
+- 1.0 release scope를 넘어서는 큰 feature 추가
+- 유료 외부 API/service 필요
 
 ---
 
-## 6. 무료 원칙
+## 6. 현재 1.0 범위 존중
 
-추가 과금이 발생하는 외부 AI/API를 자동 호출하지 않는다.
+현재 자동개발은 `docs/release_scope_1_0.md`의 최신 경계를 우선한다.
+
+1.0에 이미 들어간 축은 재구현하지 않는다.
+
+1.0 밖인:
+
+- order system
+- special beans mechanics
+- expanded guest meta
+- season/event
+- broader BM
+
+는 사용자가 명시적으로 post-1.0 작업을 승인하기 전까지 자동 추가하지 않는다.
+
+---
+
+## 7. 무료 개발 원칙
+
+별도 과금이 발생하는 외부 AI/API를 자동 호출하지 않는다.
 
 허용:
-- 현재 ChatGPT/GPT 기능
-- 연결된 GitHub
-- Git/GitHub 기본 기능
-- 공개 저장소의 GitHub Actions
-- 프로젝트 기존 스크립트
-- Playwright / ESLint / TypeScript
 
-별도 유료 API가 필요하면 중단하고 보고한다.
+- 현재 ChatGPT/GPT 제품 기능
+- connected GitHub
+- Git/GitHub 기본 기능
+- GitHub Actions의 project validation
+- 기존 Node/Next/Playwright/ESLint/TypeScript 도구
+
+유료 API key/외부 service가 필요하면 멈추고 보고한다.
 
 ---
 
-## 7. 변경 안전성
+## 8. 변경 안전성
+
 - 의미 있는 작업은 별도 branch
 - unrelated refactor 금지
-- save schema 변경은 version/migration 검토
-- 환경변수/비밀키 commit 금지
-- 기존 문서/자산 대량 삭제 금지
+- save schema 변경은 migration 검토 필수
+- secret/env commit 금지
+- 기존 문서/asset 대량 삭제 금지
+- 자동 merge 금지
 
 ---
 
-## 8. 기본 검증 게이트
+## 9. 기본 검증 게이트
 
-가능하면 완료 전에:
+최소:
+
 ```bash
 npm run lint
 npm run typecheck
@@ -165,48 +220,44 @@ npm run build
 npm run test:visual
 ```
 
-GPT 환경에서 직접 실행이 불가능하면 GitHub Actions/기존 CI 결과를 사용하고, 실행하지 못한 항목은 명확히 표시한다.
-빌드 실패 상태를 `DONE`으로 보고하지 않는다.
+UI copy/layout 변경으로 테스트가 stale해졌다면 테스트를 삭제하지 않는다.
+
+- UI selector/copy는 최신 화면에 맞춤
+- state/persistence/economy assertion은 최대한 유지
+
+빌드/검증 실패 상태를 `DONE`으로 보고하지 않는다. 단, 기존 baseline에 이미 존재한 실패라면 정확히 구분해 보고한다.
 
 ---
 
-## 9. 사용자 검수
-GPT가 대체하지 않는 항목:
-- 손맛
+## 10. 사용자 검수 지점
+
+자동화가 대체하지 않는 것:
+
+- 퍼즐 손맛
 - 재미
 - 감정 전달
+- 화면 밀도/답답함
 - 판매/성장 체감
 - 카페 감성
 
-완료보고에는 직접 플레이 검수 항목을 포함한다.
-
----
-
-## 10. 작업 순서
-1. `DEV_QUEUE.md` ACTIVE 범위 확인
-2. 기존 구현/자산 검색
-3. 영향 파일/화면 파악
-4. 구현
-5. 검증
-6. 회귀 점검
-7. 완료보고
-8. 사용자 플레이 검수
+완료보고에 `직접 플레이 검수 항목`을 반드시 넣는다.
 
 ---
 
 ## 11. 완료보고
+
 ```md
 # 완료 보고
 ## 목표
 ## 구현 완료
 ## 재사용한 기존 코드/자산
-## 신규/교체한 자산
+## 신규/교체 자산
 ## 변경 파일
 ## 검증
 - lint:
 - typecheck:
 - build:
-- visual test:
+- Playwright:
 ## 직접 플레이 검수 항목
 ## 리스크 / 미확인
 ## 다음 추천 작업
