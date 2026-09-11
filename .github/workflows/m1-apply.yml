@@ -41,6 +41,20 @@ jobs:
             git apply --whitespace=nowarn "$patch"
           done
 
+      - name: Upload patched source snapshot
+        uses: actions/upload-artifact@v4
+        with:
+          name: m1-patched-source
+          retention-days: 1
+          path: |
+            src/features/lobby/components/WorkbenchRecipeScreen.tsx
+            src/features/lobby/components/CounterScreen.tsx
+            src/features/lobby/components/RoastingScreen.tsx
+            tests/visual/recipe-ownership.spec.ts
+            tests/visual/station-source-of-truth.spec.ts
+            tests/visual/customer-sale-flow.spec.ts
+            tests/visual/meta-persistence.spec.ts
+
       - name: Setup Node
         uses: actions/setup-node@v4
         with:
