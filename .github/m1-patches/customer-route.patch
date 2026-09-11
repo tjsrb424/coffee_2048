@@ -1,13 +1,16 @@
 --- a/tests/visual/customer-sale-flow.spec.ts
 +++ b/tests/visual/customer-sale-flow.spec.ts
-@@ -13,9 +13,7 @@
+@@ -13,9 +13,10 @@
  const SELL_ONCE_AFTER_IMPORT_MS = SALE_IMPORT_GUARD_MS + 4_100;
  
  async function openCounterSheet(page: Page) {
 -  const counterTile = page.getByTestId("lobby-reference-tile-counter");
 -  await counterTile.scrollIntoViewIfNeeded();
 -  await counterTile.click();
-+  await page.goto("/lobby/counter");
++  const counterTile = page.getByTestId("lobby-reference-tile-counter");
++  await counterTile.scrollIntoViewIfNeeded();
++  await counterTile.evaluate((node) => (node as HTMLButtonElement).click());
++  await page.waitForURL(/\/lobby\/counter\/?$/);
  }
  
  async function openCounterSheetAndStartSale(page: Page) {
