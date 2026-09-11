@@ -29,12 +29,16 @@ jobs:
             .github/m1-patches/workbench-03.patch \
             .github/m1-patches/workbench-04.patch \
             .github/m1-patches/workbench-05.patch \
+            .github/m1-patches/workbench-hooks.patch \
             .github/m1-patches/counter-01.patch \
             .github/m1-patches/counter-02.patch \
             .github/m1-patches/counter-03.patch \
             .github/m1-patches/counter-04.patch \
             .github/m1-patches/roaster.patch \
             .github/m1-patches/recipe-ownership.patch \
+            .github/m1-patches/recipe-codex-dom.patch \
+            .github/m1-patches/customer-route.patch \
+            .github/m1-patches/meta-route.patch \
             .github/m1-patches/station-source-of-truth.patch
           do
             echo "Applying $patch"
